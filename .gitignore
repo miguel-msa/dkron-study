@@ -1,0 +1,7 @@
+roadmap
+
+report/*
+!report/media
+!report/media/*
+!report/report.pdf
+!report.tex
