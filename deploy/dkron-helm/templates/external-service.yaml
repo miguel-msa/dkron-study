@@ -1,0 +1,23 @@
+{{- if .Values.externalAccess.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: dkron-lb
+  labels:
+    app.kubernetes.io/name: {{ include "dkron.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app.kubernetes.io/name: dkron-server
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  {{- with .Values.externalAccess.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
