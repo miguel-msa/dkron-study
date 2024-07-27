@@ -1,0 +1,9 @@
+version: "3.8"
+
+services:
+    dkron:
+        image: dkron/dkron
+        container_name: dkron
+        ports:
+            - "8080:8080"
+        command: agent --server --bootstrap-expect=1 --node-name=node1 --disable-usage-stats

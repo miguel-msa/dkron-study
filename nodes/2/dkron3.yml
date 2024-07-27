@@ -1,0 +1,7 @@
+server: true
+bootstrap-expect: 3
+
+retry-join:
+  - dkron1
+  - dkron2
+  - dkron3
