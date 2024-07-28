@@ -45,7 +45,7 @@ WRITE ABSTRACT HERE
 \par
 \text{Commit hash:}\textbf{PUT COMMIT HASH HERE}
 
-\keywords{Dkron \and Distributed \and Benchmark \and Scalability \and REVIEW THIS .}
+\keywords{Dkron \and Distributed \and Benchmark \and Scalability \and Consensus \and Dkron Server \ and Dkron Agent .}
 %
 %
 %
@@ -57,6 +57,10 @@ WRITE ABSTRACT HERE
 %\caption{dkron Logo .} \label{fig1}
 \end{figure}
 \section{Introduction}
+TODO: add
+- context on what are these systems
+- problem it solves
+- contextualize dkron into the above
 %brief presentation of the selected system and the justification for its choice.
 %The report should also specify the git commit identifier, and the url and hash of the video that should be considered for evaluation purposes. Failure to do so will result in a grade penalty.
 
@@ -113,6 +117,64 @@ Always available: Using the power of the Raft protocol, Dkron is designed to be 
 
 Flexible targets: Simple but powerful tag-based target node selection for jobs. Tag node count allows to run jobs in an arbitrary number of nodes in the same group or groups.
 
+% todo: summarize the dkron relevant doc. sections
+
+\subsection{Getting started}
+Dkron has 2 kinds of nodes:
+\begin{itemize}
+    \item Agent
+    \item Server
+\end{itemize}
+Both are cluster members available to run scheduled jobs
+An agent can handle job executions, run scripts and return the resulting output to the server.
+A server does everything an Agent does (does it? CHECK better), plus:
+\begin{itemize}
+    \item schedules the jobs
+    \item handles data storage
+    \item participate on leader (raft) election
+    \item dispatches the execution of jobs either to Agents, or other Servers (CHECK: only other servers???).
+\end{itemize}
+
+A Dkron cluster has a leader, for raft based distribution, which is responsible to start job execution queries in the cluster.
+
+By default, all nodes execute each job. This can be controlled through the use of tags and
+a count of target nodes having this tag. "This allows to run jobs across a cluster of any size and with any
+combination of machines needed."
+
+All execution responses are gathered by the scheduler and stored in the BuntDB storage.
+
+--- SHOW HERE A CODE EXAMPLE OF TAG-BASED JOB SCHEDULE ---
+
+State Storage: BuntDB
+The scheduler state is replicated (not throughout, its different, CHECK) between all server nodes using the Serf.
+
+--
+Dkron can either run on a single node (by default) or on a cluster with multiple nodes.
+
+CHECK: Create a Job @ https://dkron.io/docs/basics/getting-started more details there might be interesting
+
+\subsection{Intro}
+THIS INFO MAY BE TRANSFERRED TO INTRO AND INTRO MAY SUFFER CHANGES!!! REVIEW
+
+\subsection{Relevant/Interesting characteristics}
+\begin{itemize}
+    \item Concurrency
+    \item Cron spec support
+\end{itemize}
+
+\subsection{Executors}
+
+\subsection{Metrics}
+\subsection{Processors}
+\subsection{Job Retries}
+\subsection{Embedded Storage}
+\subsection{Target nodes spec}
+\subsection{Clustering}
+\label{clustering}
+
+
+
+
 
 
 % todo: make this a paragraph instead ???
@@ -126,8 +188,133 @@ Therefore, with acceptable performance, whilst providing Reliability? and Availa
 for use-cases that must guarantee fault-tolerance.
 
 \section{Experimental Design}
+DESCRIPTION AND JUSTIFICATION OF THE EXPERIMENTAL DESIGN
+
+After analysing Dkron's design and particularities, the Experimental Design was initiated with the
+goal to extrapolate the most possible information out of the decisions that will be discussed below.
+
+A Fractional Factorial Design was used in order to use more factors (minimum of 6), whilst reducing
+the amount of experiments required to be done.
+
+A $2^{k-p}$ was used with \textit{k=6} and \textit{p=3} combined factors, resulting
+in a total of 8 experiments. Below is the signed table FIGX and respective resulting effects FIXG.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.25\textwidth]{media/dkron-logo.png}
+%\caption{dkron Logo .} \label{fig1}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.25\textwidth]{media/dkron-logo.png}
+%\caption{dkron Logo .} \label{fig1}
+\end{figure}
+
+\subsection{Factors}
+As can be observed, the factors are the following:
+\begin{itemize}
+    \item HasOnDemandJobs
+    \item CPU Limit (m)
+    \item Memory Limit (GiB)
+    \item Dkron Servers
+    \item Dkron Agents
+    \item Concurrent
+\end{itemize}
+
+Regarding the rationale for the choice of each factor. When deciding for factors,
+after analysing the particularities of Dkron, some questions were raised:
+\begin{enumerate}
+    \item
+\end{enumerate}
+
+The conclusions from the analysis and consequently, the attempt to answer the above questions
+can be found in subsection \ref{results}
+
+\par \textbf{HasOnDemandJobs:} Dkron is mainly built to schedule recurring jobs,
+and [this github](https://github.com/distribworks/dkron/issues/578) issue confirms that it was not initially planned to support immediately,
+one time, executed jobs. The main exploratory idea was to analyse how immediate jobs are reacted to
+i.e. if they have some threshold to be accepted in case all the pods are busy, or if in the case
+all the pods are busy, the request is simply rejected.
+\par \textbf{CPU Limit (m):} Dkron uses Raft to achieve consensus between the Dkron Agents.
+Distributed consensus protocols usually are expected to be CPU and Memory bound therefore,
+this factor is relevant to observe the impact of the Dkron Servers realizing consensus and
+providing reliability.
+\par \textbf{Memory Limit (GiB):} Likewise, due to the actions of state management and replication
+being heavily required and frequent in these kinds of protocols, Memory also seemed a relevant
+factor to take into account.
+\par \textbf{Dkron Agents:} A Dkron Agent has a very simple goal, to execute jobs dispatched by
+Dkron Servers. Having this simple pod that does not participate on consensus and only executes jobs
+seemed to be the clear factor to increase for performance gains.
+\par \textbf{Dkron Servers:} Dkron Servers do what Dkron Agents do plus scheduling of jobs,
+handling data storage and participating on leader election. Since these 2 present very
+distinguishable characteristics, it seemed relevant to analyse their interaction.
+\par \textbf{Concurrent:} Dkron is states that if no Dkron Agent/Server is available
+
+Dkron Agents in particular was a factor that unfortunately could not be configured in the
+desired way to extrapolate clear conclusions and answer the initial questions.
+
+
+MEMORY LIMIT NOTES: although no memory heavy jobs are done, memory usage was very high (raft?)
+
+\subsection{Factor Levels}
+Acknowledging there is the method of $2^k$ Factorial Design, it would be interesting to
+try with some minimum and maximum values to look for \textit{unidirectional effects} and
+in case the factor is has a unidirectional effect decide on the values from there. However,
+from deploying an Azure Kubernetes Service to Dkron becoming ready was taking approximately
+10 minutes and doing a Rolling Update was proving to be challenging, from the non-clear dkron's
+helm chart to the particular mechanism of Dkron's clustering (\ref{clustering}).
+
+Considering those challenges and the limited time, the approach to find the levels was heuristics:
+\begin{itemize}
+    \item For computational resources, i.e., CPU Limit and Memory Limit, an optimal point between
+    these resources and prices was the consideration.
+    \item For the ratio between Dkron Agents and Dkron Servers, an initial goal was set, until
+    challenges were found, making it unable to use the desired levels, servers (3 to 5) and agents (0 to 3).
+    Below an oversimplification of the challenge will be shared.
+    \item For the benchmark workload parameters, these are simply binary values.
+\end{itemize}
+
+As for the challenge with setting the desired Dkron Agents replicas, it seems dkron helm chart
+is still neither stable, nor prioritized by Dkron's team, an unfortunate late discovery
+as it was unfeasible to leave the already too invested kubernetes and helm deployment leaving.
+the only option to analyse with Dkron Agent as more of a binary value, 0 or 1.
+Particularly, the issues seems to be with one of the templates \textit{agent-deployment.yaml} or
+\textit{agent-hpa} which is ignoring the agent's set replica count and only creates 1,
+independently of the set value, 0 or 100.
+
+\subsection{Confounded Factors}
+Confounding is used to reduce the number of ran experiments while being able to use a broader range
+of factors. It is relevant to note that reducing the number of experiments in favor of time and cost savings
+and sole increase in factors is not the best approach. Instead, it should be given preference to confound
+factors while maintaining a higher level of experiments where their experiment error can be considered
+in the effect results.
+
+When confounding factors we should confound 1) factors where the interaction is probable to be negligible,
+2) factors where combined effects are not so relevant to the analyis.
+
+\begin{itemize}
+    \item \textbf{HasOnDemandJobs + CPU Limit for Dkron Servers:} these 2 confounded factors are unlikely to interact since the expected jobs done by
+        a scheduler are not heavy, and sometimes of workflow continuation or triggering.
+        Both of these confounded factors would interact more if confounded with, e.g., Dkron Servers,
+        for reasons of consensus overhead already explored.
+    \item textbf{HasOnDemandJobs and Memory confounded for Dkron Agents:} same rationale as
+    HasOnDemandJobs + CPU Limit.
+    \item textbf{CPU Limit and Memory Limit for Concurrency}: same rationale as HasOnDemandJobs
+    + CPU Limit.
+\end{itemize}
+
+
 \section{Results}
+\label{results}
 \section{Conclusion}
+
+\subsection{Limitations}
+Dkron's helm chart is still not stable for an easy deployment. Documentation is lacking, and
+it seems there is no stable helm chart for dkron. Additionally, during bug fixing and deployment
+problem resolving, I was left with the idea that [a lot more other developers face their own
+unexpected issues with dkron's helm chart](https://github.com/distribworks/dkron/issues?q=helm).
+
 
 % ! %%%
 % ! %%% EXAMPLES BELOW
