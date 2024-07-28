@@ -1,9 +1,6 @@
-import os
 import subprocess
 import json
 import sys
-import time
-import requests
 
 # Configs
 resource_group = 'dkron_resource_group'
@@ -20,23 +17,8 @@ def run_cmd(command):
         return None
     return result.stdout
 
-def check_dkron_health(url, retries=5, delay=10):
-    for _ in range(retries):
-        try:
-            response = requests.get(url)
-            if response.status_code == 200:
-                print("Dkron is reachable and healthy.")
-                return True
-            else:
-                print(f"Received status code {response.status_code}. Retrying...")
-        except requests.RequestException as e:
-            print(f"Request failed: {e}. Retrying...")
-        time.sleep(delay)
-    print("Dkron could not be reached.")
-    return False
-
 # Register the necessary namespaces
-'''
+
 print('Registering Resource Providers...')
 
 print('Registering: OperationalInsights...')
@@ -47,7 +29,7 @@ run_command('az provider register --namespace Microsoft.Insights')
 
 print('Registering: ContainerService...')
 run_command('az provider register --namespace Microsoft.ContainerService')
-'''
+
 
 print(f'Checking if resource group - {resource_group} - exists...')
 rg_exists = json.loads(run_cmd(f'az group exists --name {resource_group}'))
@@ -90,7 +72,6 @@ run_cmd('helm repo update')
 #
 print('Deploying Dkron through helm...')
 try:
-    # run_command('helm upgrade --install dkron dkron/dkron -f values.yaml')
     run_cmd('helm upgrade --install dkron ./dkron-helm -f ./dkron-helm/values.yaml')
 except:
     print("Helm deployment failed")
@@ -98,29 +79,3 @@ except:
 
 print("AKS Cluster and Dkron deployed successfully.")
 # Azure Monitor for Containers enabled for historical resource monitoring. CHECK THIS
-
-
-''''
-# Get the external IP of the Dkron service
-external_ip = None
-for i in range(10):
-    svc_info = run_command('kubectl get svc dkron -o json')
-    if svc_info:
-        svc_info_json = json.loads(svc_info)
-        if 'loadBalancer' in svc_info_json['status'] and 'ingress' in svc_info_json['status']['loadBalancer']:
-            external_ip = svc_info_json['status']['loadBalancer']['ingress'][0].get('ip', None)
-        if external_ip:
-            break
-    print("Waiting for external IP...")
-    time.sleep(10)
-
-if not external_ip:
-    print("Failed to obtain external IP for the Dkron service.")
-    exit(1)
-
-# Check Dkron health
-dkron_url = f"http://{external_ip}:8080/v1/health"
-if not check_dkron_health(dkron_url):
-    print("Dkron service is not healthy. Exiting.")
-    exit(1)
-'''
