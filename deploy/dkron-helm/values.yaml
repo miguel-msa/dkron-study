@@ -18,14 +18,14 @@ server:
     podLabels:
         app: dkron
         component: server
-    replicaCount: 5
+    replicaCount: 3
     extraArgs:
         - "--server"
-        - "--bootstrap-expect=5"
-        #- '--retry-join provider=k8s label_selector="app=dkron,component=server"'
-        # - "--retry-join=dkron-server-0.dkron-server"
-        # - "--retry-join=dkron-server-1.dkron-server"
-        # - "--retry-join=dkron-server-2.dkron-server"
+        - "--bootstrap-expect=3"
+        - '--retry-join provider=k8s label_selector="app=dkron,component=server"'
+        - "--retry-join=dkron-server-0.dkron-server"
+        - "--retry-join=dkron-server-1.dkron-server"
+        - "--retry-join=dkron-server-2.dkron-server"
     log:
         level: "info"
     podAnnotations: {}
@@ -65,41 +65,41 @@ server:
         enabled: true
         size: 1Gi
 
-# agent:
-#     podLabels:
-#         app: dkron
-#         component: agent
-#     replicaCount: 0
-#     extraArgs:
-#         #- '--retry-join provider=k8s label_selector="app=dkron,component=server"'
-#         # - "--retry-join=dkron-server-0.dkron-server"
-#         # - "--retry-join=dkron-server-1.dkron-server"
-#         # - "--retry-join=dkron-server-2.dkron-server"
-#     log:
-#         level: "info"
-#     deploymentAnnotations: {}
-#     podAnnotations: {}
-#     podSecurityContext: {}
-#     securityContext: {}
-#     podManagementPolicy: Parallel
-#     updateStrategy:
-#         type: RollingUpdate
-#     statefulset:
-#         annotations:
-#             helm.sh/hook: post-install,post-upgrade
-#             helm.sh/hook-weight: "1"
-#     resources:
-#         limits:
-#             cpu: 500m
-#             memory: 2Gi
-#         requests:
-#             cpu: 250m
-#             memory: 1Gi
-#     autoscaling:
-#         enabled: false
-#     nodeSelector: {}
-#     tolerations: []
-#     affinity: {}
+agent:
+    podLabels:
+        app: dkron
+        component: agent
+    replicaCount: 0
+    extraArgs:
+        - '--retry-join provider=k8s label_selector="app=dkron,component=server"'
+        - "--retry-join=dkron-server-0.dkron-server"
+        - "--retry-join=dkron-server-1.dkron-server"
+        - "--retry-join=dkron-server-2.dkron-server"
+    log:
+        level: "info"
+    deploymentAnnotations: {}
+    podAnnotations: {}
+    podSecurityContext: {}
+    securityContext: {}
+    podManagementPolicy: Parallel
+    updateStrategy:
+        type: RollingUpdate
+    statefulset:
+        annotations:
+            helm.sh/hook: post-install,post-upgrade
+            helm.sh/hook-weight: "1"
+    resources:
+        limits:
+            cpu: 500m
+            memory: 2Gi
+        requests:
+            cpu: 250m
+            memory: 1Gi
+    autoscaling:
+        enabled: false
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
 
 envs: {}
 
