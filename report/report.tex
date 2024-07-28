@@ -38,13 +38,21 @@
 \maketitle              % typeset the header of the contribution
 %
 \begin{abstract}
-WRITE ABSTRACT HERE
+Dkron is a golang written distributed cron job scheduler that is
+fault-tolerant (Reliable), and allows for concurrent job execution.
+In this project...
+Summary Method?
+Summary Results?
 \end{abstract}
 
 \par
 \text{Repository: \href{https://github.com/miguel-msa/dkron-study}{github.com/miguel-msa/dkron-study}}
 \par
-\text{Commit hash:}\textbf{PUT COMMIT HASH HERE}
+\text{Commit hash:} \textbf{PUT COMMIT HASH HERE}
+\par
+\text{Video link (youtube):} \textbf{https://youtu.be/SxbSg0Dx16s}
+
+
 
 \keywords{Dkron \and Distributed \and Benchmark \and Scalability \and Consensus \and Dkron Server \ and Dkron Agent \and Raft.}
 %
@@ -52,20 +60,23 @@ WRITE ABSTRACT HERE
 %
 % %%%
 % %%%
-\begin{figure}
-\centering
-\includegraphics[width=0.25\textwidth]{media/dkron-logo.png}
-%\caption{dkron Logo .} \label{fig1}
-\end{figure}
-\section{Introduction}
-TODO: add
-- context on what are these systems
-- problem it solves
-- contextualize dkron into the above
-%brief presentation of the selected system and the justification for its choice.
-%The report should also specify the git commit identifier, and the url and hash of the video that should be considered for evaluation purposes. Failure to do so will result in a grade penalty.
 
-On the surface, Dkron provides an interface that:
+
+\section{Introduction}
+
+Distributed systems, in simple terms, are a group of systems or processes that work together
+for a common goal. Being distributed, some particularities need to be considered, for instance
+how do they interact, and how do they agree on a decision. Agreeableness in distributed
+systems is a concept of grand study, where we have examples like Paxos and Raft, being both
+consensus algorithms.
+
+A job scheduling system purpose is to automate execution of jobs, do repetitive tasks,
+and when well-defined and organized, automate entire workflows. It is expected that these jobs run within defined conditions,
+for instance time-based conditions. Other use cases are resource management
+(e.g., scheduled to execute for off-peak hours) and avoid manual intervention.
+
+Dkron is a distributed job scheduling system that on the surface:
+
 \begin{enumerate}
     \item Has flexible tag-based job definition
     \item Allows for Distributed execution, where these jobs can be ran in a distributed mode. % todo: review this!
@@ -73,34 +84,25 @@ On the surface, Dkron provides an interface that:
     \item Easy to deploy with built-in replicated storage (BuntDB) relying on the Raft protocol.
     \item Provides a Web-GUI for administration.
 \end{enumerate}
-The above characteristics, and more, are further explored in \ref{system_description}
+The above characteristics, and more, are also explored in \ref{system_description}
 
 \break
-When selecting the system to analyse, some of the factors driving the ultimate choice were:
+When selecting the system to analyse, some of the factors driving the choice were:
 \begin{enumerate}
     \item Interest in exploring \href{https://go.dev/}{Go} source code.
-    \item Understand more about a system that is not a database
-    \item IS THIS OK? REVIEW THIS
+    \item Explore a system that is not a database
 \end{enumerate}
-After finding some systems fulfilling these requirements, Dkron became the system that raised a curious question:
-\textit{What is the performance of a scheduler, seemingly, focused on availability? and reliability?}
+From the options, Dkron raised a question:
+\textit{What is the performance of a scheduler, seemingly, focused on availability and reliability}
 
-As this is not explored by Dkron, I became interested in finding out the implementation, e.g. scheduling approach, and extrapolate,
-joined with benchmarking, its behavior, i.e., its performance, and scaling capacity.
+As this is not thoroughly explored by Dkron, I got interested in this system and how it would scale
+for reliability.
 
 ~\\
 Ultimately, Dkron is a golang written scheduler with specific particularities for some key use-cases.
 Its claims are not bold, neither on its performance, nor on how it actually does scheduling. This opens an
 opportunity to not only explore something unclaimed, but also on how Dkron found the
 optimal point, if exists, between performance and reliability.
-
-%Some of the claimed use-cases are:
-%- Email delivery
-%- Payroll generation
-%- Bookkeeping
-%- Data consolidation for BI
-%- Recurring invoicing
-%- Data transfer
 
 % TODO
 % ! TODO: this text needs to change
@@ -109,55 +111,16 @@ optimal point, if exists, between performance and reliability.
 performance on workloads similar, as in trying to represent, to such use-cases.
 % TODO: these claims are NOT CAREFULLY CONSIDERED! REVIEW THIS!!!
 
+\begin{figure}[h]
+\centering
+\includegraphics[width=3cm]{media/dkron-logo.png}
+%\caption{dkron Logo .} \label{fig1}
+\end{figure}
+
 \section{System Description}
 \label{system_description}
 
-PUT HERE ALL THE relevant PERKS\&QUIRKS of Dkron in detail
-
-Always available: Using the power of the Raft protocol, Dkron is designed to be always available. If the cluster leader node fails, a follower will replace it, all without human intervention.
-
-Flexible targets: Simple but powerful tag-based target node selection for jobs. Tag node count allows to run jobs in an arbitrary number of nodes in the same group or groups.
-
-% todo: summarize the dkron relevant doc. sections
-
-\subsection{Getting started}
-Dkron has 2 kinds of nodes:
-\begin{itemize}
-    \item Agent
-    \item Server
-\end{itemize}
-Both are cluster members available to run scheduled jobs
-An agent can handle job executions, run scripts and return the resulting output to the server.
-A server does everything an Agent does (does it? CHECK better), plus:
-\begin{itemize}
-    \item schedules the jobs
-    \item handles data storage
-    \item participate on leader (Raft) election
-    \item dispatches the execution of jobs either to Agents, or other Servers (CHECK: only other servers???).
-\end{itemize}
-
-A Dkron cluster has a leader, for Raft based distribution, which is responsible to start job execution queries in the cluster.
-
-By default, all nodes execute each job. This can be controlled through the use of tags and
-a count of target nodes having this tag. "This allows to run jobs across a cluster of any size and with any
-combination of machines needed."
-
-All execution responses are gathered by the scheduler and stored in the BuntDB storage.
-
---- SHOW HERE A CODE EXAMPLE OF TAG-BASED JOB SCHEDULE ---
-
-State Storage: BuntDB
-The scheduler state is replicated (not throughout, its different, CHECK) between all server nodes using the Serf.
-
---
-Dkron can either run on a single node (by default) or on a cluster with multiple nodes.
-
-CHECK: Create a Job @ https://dkron.io/docs/basics/getting-started more details there might be interesting
-
-\subsection{Intro}
-THIS INFO MAY BE TRANSFERRED TO INTRO AND INTRO MAY SUFFER CHANGES!!! REVIEW
-
-\subsection{Relevant/Interesting characteristics}
+Further exploring Dkron's characteristics from the summary in the introduction, some of Dkron's particularities are:
 \begin{enumerate}
     \item \textbf{Concurrency:} A job can be either ran concurrently, by default,
     allowing for overlapping jobs, or forbid concurrency.
@@ -169,21 +132,72 @@ THIS INFO MAY BE TRANSFERRED TO INTRO AND INTRO MAY SUFFER CHANGES!!! REVIEW
     \item \textbf{Metrics:} Dkron can send metrics to Statsd and provide prometheus format metrics.
     \item \textbf{Job Retries:} A job can be declared to retry in case of failure.
     \item \textbf{Embedded Storage:} Dkron uses an embedded KV store based on BuntDB.
+    \item \textbf{State Storage:} The scheduler state is replicated between all
+    server nodes using \href{https://www.serf.io/}{Serf}.
     \item \textbf{Target nodes spec:} By default every node will run a job, however there is
     the ability to set tags for jobs to be ran only by target nodes identified with those
     same tags.
     \item \textbf{Clustering:} Clustering in Dkron provides fault tolerance when the
     quorum is equal or higher than 3.
+    \item \textbf{Leader Recovery:} Detects if the leader is missing in the work pool,
+    and (usually) elects a new leader.
 \end{enumerate}
+
+
+Dkron has 2 kinds of nodes: Server and Agent.
+Both are cluster members available to run scheduled jobs
+
+An agent can handle job executions, run scripts and return the resulting output to the server.
+
+A server does everything an Agent does, plus:
+\begin{itemize}
+    \item Schedules jobs
+    \item Handles data storage
+    \item Participate on leader (Raft) election
+    \item Dispatches the execution of jobs either to Agents, or other Servers.
+\end{itemize}
+
+A Dkron cluster has a leader, for Raft based distribution, which is responsible to start job execution queries in the cluster.
+
+By default, all nodes execute each job. This can be controlled through the use of tags and
+a count of target nodes having this tag. This allows to run jobs across a cluster of any size and with any
+combination of machines needed.
+
+All execution responses are gathered by the scheduler and stored in the BuntDB storage.
+
+\begin{verbatim}
+{
+    "name": "job_name",
+    "command": "/bin/true",
+    "schedule": "@every 2m",
+    "tags": {
+        "my_role": "web:1"
+    }
+}
+\end{verbatim}
+
+Above is an example of a job that should run only on one node, in any that has the value \textit{web}
+for the tag \textit{my\_role}
+
+
+
+
+--
+Dkron can either run on a single node (by default) or on a cluster with multiple nodes.
+
+CHECK: Create a Job @ https://dkron.io/docs/basics/getting-started more details there might be interesting
+
+
 
 % todo: make this a paragraph instead ???
 \subsection{No Single Point of Failure}
-This no SPOF characteristic is very relevant for systems that depend on workload automation to function i.e. the scheduler dependee
-system might be fault-tolerant, but the scheduler itself might not, making these "fault-tolerant" systems, indirectly, not as
-so - Dkron fixes this problem by, as they claim, being the only existing scheduler with no SPOF. % ! REPETITIVE TEXT
+By leveraging Raft consensus algorithm, this no Single Point of Failure characteristic is very relevant for systems
+that, e.g., depend on other running jobs or trigger to function - the scheduler.
+The System using these schedulers might be fault-tolerant, but the scheduler itself might not, making these "fault-tolerant" systems, indirectly, not as
+so - Dkron fixes this problem by, as they claim, being the only existing scheduler with no SPOF.
 
 % ? Acceptable Performance --> we'll find out on tests
-Therefore, with acceptable performance, whilst providing Reliability? and Availability?, Dkron is an interesting solution
+Therefore, with acceptable performance, whilst providing Reliability, Dkron is an interesting solution
 for use-cases that must guarantee fault-tolerance.
 
 \section{Benchmarking}
@@ -215,9 +229,21 @@ every member in the cluster will run the job.
 With very limited, information on Dkron's scaling capabilities either on their
 documentation or elsewhere, one can assume, contention and crosstalk will increase as most systems do.
 Without a formal baseline to which to compare with, I took the liberty to thinker with a synthetic workload
-to push the limits of Dkron.
+to push the limits of Dkron whilst considering the University Scalability Law and its properties.
 
-Having this, considering the Universal Scalability Law, the properties that would most
+\[
+X(N) = \frac{N}{1 + \alpha (N - 1) + \beta N (N - 1)}
+\]
+
+where:
+\begin{itemize}
+    \item \( X(N) \) is the throughput of the system with \( N \) resources.
+    \item \( N \) is the number of resources (e.g., processors, nodes).
+    \item \( \alpha \) is the contention coefficient, representing the contention delay due to resource sharing.
+    \item \( \beta \) is the coherency coefficient, representing the delay due to the need to maintain coherence across resources.
+\end{itemize}
+
+Having this, considering the Universal Scalability Law, the system characteristics that would most
 affect Dkron scalability could be:
 
 \begin{itemize}
@@ -231,11 +257,13 @@ affect Dkron scalability could be:
         leader election, and state coherence.
      \end{itemize}
     \item Increase in Dkron Agents may increase:
-     \item Contention: having more members in the cluster increases the cluster provisioning, maintenance,
+     \begin{itemize}
+        \item Contention: having more members in the cluster increases the cluster provisioning, maintenance,
      and load balancing overhead.
-     \item Crosstalk: although not as much as Dkron Servers, but Agents need to join the cluster and become
+        \item Crosstalk: although not as much as Dkron Servers, but Agents need to join the cluster and become
      known by the Servers for job dispatch, as well every new agent is a new running job that needs (by default)
      to be stored by servers, requiring state coherence.
+     \end{itemize}
 \end{itemize}
 
 % The stated above needs to be empirically tested, as there is not much information on the
@@ -246,9 +274,11 @@ affect Dkron scalability could be:
 
 \subsubsection{Built Heuristic Benchmak}
 
-The benchmark was built with \href{K6}{https://k6.io/docs/} in JavaScript.
+Dkron does not make any claims on its performance and scalability capacities. Joined to the fact that
+I could not find any relevant ready-made or standard benchmarks, heuristics were used.
 
-I did experiment with following:
+The benchmark was built with \href{https://k6.io/docs/}{K6} in JavaScript. I did experiment with
+the following:
 \begin{itemize}
     \item CPU-focused job: doing a high bound loop with arithmetic computations
     \item Memory-focused job: read data and pipe it
@@ -257,10 +287,13 @@ I did experiment with following:
 However, these jobs proved to be very heavy for the Dkron pods, as it would cause crashes and even no
 fault recovery unless manually fixed.
 
-The final benchmark does 2 simple jobs that do the same but in different manners:
+The final resulting benchmark used to extrapolate the metrics, does 2 simple jobs
+that execute the same, an echo, but in different manners:
 \begin{itemize}
-    \item schedule echo - this job will run indefinitely on the frequency defined
-    \item immediately request echo
+    \item Schedule echo: this job will run indefinitely every time, associated to
+    the frequency defined, e.g., (echo) every 2 seconds.
+    \item Immediately request echo: this job is a basically a post request that expects an "immediate"
+    response.
 \end{itemize}
 
 These jobs are either ran by the pod that received the job, or dispatched, by a Server, to another pod.
@@ -268,15 +301,6 @@ These jobs are either ran by the pod that received the job, or dispatched, by a 
 Regarding immediately requesting echo, k6 provides an interface to simulate multiple virtual users
 making requests.
 
-% \begin{lstlisting}[language=javascript]
-% export const options = {
-%     stages: [
-%         { duration: "60s", target: 20 },
-%         { duration: "60s", target: 60 },
-%         { duration: "60s", target: 0 },
-%     ],
-% };
-% \end{lstlisting}
 \begin{verbatim}
 export const options = {
     stages: [
@@ -291,37 +315,47 @@ As observed in the code in FIGX, this benchmarks runs for 3 minutes ramping up v
 users to 20 during the first sixty seconds, then ramping up from 20 to 60 in the next sixty seconds,
 and then ramping down.
 
-For more detail on the benchmark refer to \ref{}, where it is explained in
-more detail after discussing the Experimental Design.
+This benchmark has the goal of extremely stressing the cluster with an increasing amount of
+workload, i.e., scheduled jobs. A schedules job once created, will run indefinitely for its frequency
+unless deleted, meaning that as time passes, the stress increases.
 
-% ! TODO: make this after explaining FACTORS ???
-The script can be analysed in \textit{/benchmark/benchmark.js}. The general idea is:
-\begin{itemize}
-    \item When the fac
-\end{itemize}
+The script can be analysed in \textit{/benchmark/benchmark.js}.
+The purpose of this was to be able benchmark the response time over an environment where Dkron
+is under a big stress. With this, we could extrapolate from k6 the response time and error rate,
+which was the main goal. The reasoning behind this is that a scheduler is a system that, under
+well-organized definitions, is set in such a way where it should have always the opportunity to
+run the jobs it is instructed to. Having this, my way of thought for this benchmark was to
+see how well Dkron handles a peak amount of stress (3 minutes benchmark) and can handle
+state coherency, state persistance, and job dispatch and execution.
 
+Other performance metrics like throughput and utilization could also be explored.
+However, response time, which includes latency seemed more suitable for a job scheduler.
+More discussion on this topic of metrics can be found in \ref{results}
 
-
---
-Performance Metrics:
-- talk about what are they and which I selected
-- brief on latency vs throughput
-- talk about performance limitations and which I had
---
-
-Due to lack of material and examples on benchmarking job schedulers, the benchmarking was heuristics.
-
-\subsection{Dkron Under the Universal Scalability Law}
-
-1. Devise a simple benchmark that allows to assess the behaviour of the system.
-2. Analyse the scalability properties of the system.
-3. Analyse how the scalability properties can be explained considering the Universal Scalability Law.
 
 \subsection{Dkron Bottlenecks}
 1. Decompose a request into a pipeline of stages.
+
+A default request (recurrent + concurrent) can be sectioned into the following:
+\begin{enumerate}
+    \item Request done to AKS Load Balancer
+    \item Load Balancer forwards to one of the pods (servers or agents)
+    \item If the receiving pod is not the leader, sends an event to the leader warning about the request
+    \item The leader starts a Raft Consensus to reach a common value with the quorum and schedule the job
+    \item If all goes well, the job is scheduled
+    \item A scheduled job is queried by a Server and either executed or dispatched to an Agent
+    \item The pod executing the job, executes it and responds with the execution result
+    \item The execution result is stored in the Server's BuntDB instance
+\end{enumerate}
+
+Not considering the Raft consensus algorithm as I consider tanalysing it out of scope of the project,
+the stage which does a lot of processing
+
 2. Study which portions of the pipeline are the bottleneck (or can become one) and reason
 about which of the techniques studied in the classes could be applied to remove or
 mitigate the bottleneck.
+
+
 
 
 \subsection{Experimental Design}
@@ -452,6 +486,12 @@ When confounding factors we should confound 1) factors where the interaction is 
 
 \section{Results}
 \label{results}
+
+
+However,
+a small note on utilization, although not formally registered in the report, I was observing the
+pods CPU and Memory utilization.
+
 \section{Conclusion}
 \label{conclusion}
 
