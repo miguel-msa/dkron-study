@@ -12,7 +12,7 @@ To deploy Dkron into (azure) AKS follow this steps (you need an Azure subscripti
         1. Do not forget to update the extraArgs equal to the expected Server workpool size
     2. The `agent-...` templates are broken and only deploy 1 agent independent of the value set
         1. To have 0 agents put the agent templates into `/aunused_templates`, otherwise, keep it in templates
-4. run `/deploy/setup_aks_dekron.py`
+4. run `python /deploy/setup_aks_dekron.py` (mind the dir!)
 5. This will start the deployment process
 6. After it is deployed run:
     1. kubectl get svc
@@ -24,3 +24,4 @@ To deploy Dkron into (azure) AKS follow this steps (you need an Azure subscripti
     1. You can also set different payload characteristics:
         1. `DO_ON_DEMAND_JOBS`
         2. `CONCURRENT_ALLOW`
+    2. To run the benchmark: `k6 run .\benchmark.js` (mind the dir!)
