@@ -113,7 +113,6 @@ performance on workloads similar, as in trying to represent, to such use-cases.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=3cm]{media/dkron-logo.png}
 %\caption{dkron Logo .} \label{fig1}
 \end{figure}
 
@@ -149,13 +148,9 @@ Both are cluster members available to run scheduled jobs
 
 An agent can handle job executions, run scripts and return the resulting output to the server.
 
-A server does everything an Agent does, plus:
-\begin{itemize}
-    \item Schedules jobs
-    \item Handles data storage
-    \item Participate on leader (Raft) election
-    \item Dispatches the execution of jobs either to Agents, or other Servers.
-\end{itemize}
+A server does everything an Agent does, plus: schedules jobs, handles data storage,
+participate on leader (Raft) election, dispatches the execution of jobs either to Agents,
+or other Servers.
 
 A Dkron cluster has a leader, for Raft based distribution, which is responsible to start job execution queries in the cluster.
 
@@ -215,10 +210,8 @@ reliability. This, along the fact that all the dkron cluster members of kind Ser
 between themselves, all the job responses' logs.
 
 ~\\ Thus, the intuitive conclusion for Dkron is:
-\begin{itemize}
-    \item Increase Dkron Servers to improve fault-tolerance, but increases overhead.
-    \item Increase Dkron Agents to improve performance.
-\end{itemize}
+\textbf{1)} Increase Dkron Servers to improve fault-tolerance, but increases overhead,
+\textbf{2)}Increase Dkron Agents to improve performance.
 
 
 Nevertheless, solely increasing Agents, even with unlimited costs, is not an infinite answer.
@@ -226,8 +219,7 @@ Even more so considering that, unless the
 \href{job is targeted to a set of tags}{https://dkron.io/docs/usage/target-nodes-spec},
 every member in the cluster will run the job.
 
-With very limited, information on Dkron's scaling capabilities either on their
-documentation or elsewhere, one can assume, contention and crosstalk will increase as most systems do.
+With very limited, information on Dkron's scaling capabilities, one can assume, contention and crosstalk will increase as most systems do.
 Without a formal baseline to which to compare with, I took the liberty to thinker with a synthetic workload
 to push the limits of Dkron whilst considering the University Scalability Law and its properties.
 
@@ -246,31 +238,17 @@ where:
 Having this, considering the Universal Scalability Law, the system characteristics that would most
 affect Dkron scalability could be:
 
-\begin{itemize}
-    \item Increase in Dkron Servers may increase:
-     \begin{itemize}
-        \item Contention: since there are serial parts of the dkron process like,
-        receiving, dispatching, and storing a job. The serial part of the job itself, will
-        depend on the process to execute associated to the job, this can be anything.
-        \item Crosstalk: this can be assumed to be a big part of these kinds of members since
-        a server needs frequent communication between its consensus peers, e.g., for
-        leader election, and state coherence.
-     \end{itemize}
-    \item Increase in Dkron Agents may increase:
-     \begin{itemize}
-        \item Contention: having more members in the cluster increases the cluster provisioning, maintenance,
-     and load balancing overhead.
-        \item Crosstalk: although not as much as Dkron Servers, but Agents need to join the cluster and become
-     known by the Servers for job dispatch, as well every new agent is a new running job that needs (by default)
-     to be stored by servers, requiring state coherence.
-     \end{itemize}
-\end{itemize}
+Increase in Dkron Servers may increase contention, since there are serial parts of the dkron process like,
+receiving, dispatching, and storing a job. The serial part of the job itself, will
+depend on the process to execute associated to the job, this can be anything. Regarding
+crosstalk, this can be assumed to be a big part of these kinds of members since
+a server needs frequent communication between its consensus peers, e.g., for
+leader election, and state coherence.
 
-% The stated above needs to be empirically tested, as there is not much information on the
-% internal qualities of Dkron. The analysis on this project are mostly heuristic based on the
-% theoretical lectures of the course, and plays a role not only on performance analysis, but also
-% on exploring the system itself and the ways of its deployment.
-
+Increase in Dkron Agents may increase contention, having more members in the cluster increases the cluster provisioning, maintenance,
+and load balancing overhead. Regarding crosstalk, although not as much as Dkron Servers, but Agents need to join the cluster and become
+known by the Servers for job dispatch, as well every new agent is a new running job that needs (by default)
+to be stored by servers, requiring state coherence.
 
 \subsubsection{Built Heuristic Benchmak}
 
@@ -278,24 +256,16 @@ Dkron does not make any claims on its performance and scalability capacities. Jo
 I could not find any relevant ready-made or standard benchmarks, heuristics were used.
 
 The benchmark was built with \href{https://k6.io/docs/}{K6} in JavaScript. I did experiment with
-the following:
-\begin{itemize}
-    \item CPU-focused job: doing a high bound loop with arithmetic computations
-    \item Memory-focused job: read data and pipe it
-\end{itemize}
-
+the following: CPU-focused job, doing a high bound loop with arithmetic computations;
+and Memory-focused job, read data and pipe it.
 However, these jobs proved to be very heavy for the Dkron pods, as it would cause crashes and even no
 fault recovery unless manually fixed.
 
 The final resulting benchmark used to extrapolate the metrics, does 2 simple jobs
-that execute the same, an echo, but in different manners:
-\begin{itemize}
-    \item Schedule echo: this job will run indefinitely every time, associated to
-    the frequency defined, e.g., (echo) every 2 seconds.
-    \item Immediately request echo: this job is a basically a post request that expects an "immediate"
-    response.
-\end{itemize}
-
+that execute the same, an echo, but in different manners: 1) schedule echo, this job will run indefinitely every time, associated to
+the frequency defined, e.g., (echo) every 2 seconds.
+2) immediately request echo, this job is a basically a post request that expects an immediate
+response.
 These jobs are either ran by the pod that received the job, or dispatched, by a Server, to another pod.
 
 Regarding immediately requesting echo, k6 provides an interface to simulate multiple virtual users
@@ -337,16 +307,14 @@ More discussion on this topic of metrics can be found in \ref{results}
 1. Decompose a request into a pipeline of stages.
 
 A default request (recurrent + concurrent) can be sectioned into the following:
-\begin{enumerate}
-    \item Request done to AKS Load Balancer
-    \item Load Balancer forwards to one of the pods (servers or agents)
-    \item If the receiving pod is not the leader, sends an event to the leader warning about the request
-    \item The leader starts a Raft Consensus to reach a common value with the quorum and schedule the job
-    \item If all goes well, the job is scheduled
-    \item A scheduled job is queried by a Server and either executed or dispatched to an Agent
-    \item The pod executing the job, executes it and responds with the execution result
-    \item The execution result is stored in the Server's BuntDB instance
-\end{enumerate}
+\textbf{1)} Request done to AKS Load Balancer,
+\textbf{2)}Load Balancer forwards to one of the pods (servers or agents),
+\textbf{3)} If the receiving pod is not the leader, sends an event to the leader warning about the request,
+\textbf{4)} The leader starts a Raft Consensus to reach a common value with the quorum and schedule the job,
+\textbf{5)} If all goes well, the job is scheduled,
+\textbf{6)} A scheduled job is queried by a Server and either executed or dispatched to an Agent,
+\textbf{7)} The pod executing the job, executes it and responds with the execution result,
+\textbf{8)} The execution result is stored in the Server's BuntDB instance.
 
 Not considering the Raft consensus algorithm as I believe analysing it is out of scope of the project,
 one of the stages that could be improved are stage 6, 7, and 8.
@@ -371,8 +339,6 @@ in one go also. This also opens opportunities to drop some possibly unnecessary 
 
 
 \subsection{Experimental Design}
-DESCRIPTION AND JUSTIFICATION OF THE EXPERIMENTAL DESIGN
-
 After analysing Dkron's design and particularities, the Experimental Design was initiated with the
 goal to extrapolate the most possible information out of the decisions that will be discussed below.
 
@@ -380,69 +346,42 @@ A Fractional Factorial Design was used in order to use more factors (minimum of 
 the amount of experiments required to be done.
 
 A $2^{k-p}$ was used with \textit{k=6} and \textit{p=3} combined factors, resulting
-in a total of 8 experiments. Below is the signed table FIGX and respective resulting effects FIXG.
-
-\begin{figure}
-\centering
-\includegraphics[width=0.25\textwidth]{media/dkron-logo.png}
-%\caption{dkron Logo .} \label{fig1}
-\end{figure}
-
-\begin{figure}
-\centering
-\includegraphics[width=0.25\textwidth]{media/dkron-logo.png}
-%\caption{dkron Logo .} \label{fig1}
-\end{figure}
-
-
+in a total of 8 experiments.
 
 \subsubsection{Factors}
-As can be observed, the factors are the following:
-\begin{itemize}
-    \item HasOnDemandJobs
-    \item CPU Limit (m)
-    \item Memory Limit (GiB)
-    \item Dkron Servers
-    \item Dkron Agents
-    \item Concurrent
-\end{itemize}
 
+As can be observed, the factors are the following: HasOnDemandJobs, CPU Limit (m),
+Memory Limit (GiB), Dkron Servers, Dkron Agents, Concurrent.
 Regarding the rationale for the choice of each factor. When deciding for factors,
 after analysing the particularities of Dkron, some questions were raised:
 \begin{enumerate}
-    \item question1
-    \item question2
+    \item How can Dkron handle high peak overload and still function, i.e., do Raft, execute and
+    dispatch?
+    \item How affected are immediate requests response time when Dkron is on high load?
 \end{enumerate}
 
 The conclusions from the analysis and consequently, the attempt to answer the above questions
 can be found in subsection \ref{results}
 
-\par \textbf{HasOnDemandJobs:} Dkron is mainly built to schedule recurring jobs,
-and [this github](https://github.com/distribworks/dkron/issues/578) issue confirms that it was not initially planned to support immediately,
+\textbf{HasOnDemandJobs:} Dkron is mainly built to schedule recurring jobs,
+and \href{https://github.com/distribworks/dkron/issues/578}{this github issue} confirms that it was not initially planned to support immediately,
 one time, executed jobs. The main exploratory idea was to analyse how immediate jobs are reacted to
 i.e. if they have some threshold to be accepted in case all the pods are busy, or if in the case
 all the pods are busy, the request is simply rejected.
-\par \textbf{CPU Limit(m):} Dkron uses Raft to achieve consensus between the Dkron Agents.
+\textbf{CPU Limit(m):} Dkron uses Raft to achieve consensus between the Dkron Agents.
 Distributed consensus protocols usually are expected to be CPU and Memory bound therefore,
 this factor is relevant to observe the impact of the Dkron Servers realizing consensus and
 providing reliability.
-\par \textbf{Memory Limit(GiB):} Likewise, due to the actions of state management and replication
+\textbf{Memory Limit(GiB):} Likewise, due to the actions of state management and replication
 being heavily required and frequent in these kinds of protocols, Memory also seemed a relevant
 factor to take into account.
-\par \textbf{Dkron Agents:} A Dkron Agent has a very simple goal, to execute jobs dispatched by
+\textbf{Dkron Agents:} A Dkron Agent has a very simple goal, to execute jobs dispatched by
 Dkron Servers. Having this simple pod that does not participate on consensus and only executes jobs
 seemed to be the clear factor to increase for performance gains.
-\par \textbf{Dkron Servers:} Dkron Servers do what Dkron Agents do plus scheduling of jobs,
+\textbf{Dkron Servers:} Dkron Servers do what Dkron Agents do plus scheduling of jobs,
 handling data storage and participating on leader election. Since these 2 present very
 distinguishable characteristics, it seemed relevant to analyse their interaction.
-\par \textbf{Concurrent:} Dkron is states that if no Dkron Agent/Server is available
-
-Dkron Agents in particular was a factor that unfortunately could not be configured in the
-desired way to extrapolate clear conclusions and answer the initial questions.
-
-
-MEMORY LIMIT NOTES: although no memory heavy jobs are done, memory usage was very high (raft?)
-
+\textbf{Concurrent:} Dkron is states that if no Dkron Agent/Server is available
 
 
 \subsubsection{Factor Levels}
@@ -454,14 +393,12 @@ from deploying an Azure Kubernetes Service to Dkron becoming ready was taking ap
 helm chart to the particular mechanism of Dkron's clustering (\ref{clustering}).
 
 Considering those challenges and the limited time, the approach to find the levels was heuristics:
-\begin{itemize}
-    \item For computational resources, i.e., CPU Limit and Memory Limit, an optimal point between
+For computational resources, i.e., CPU Limit and Memory Limit, an optimal point between
     these resources and prices was the consideration.
-    \item For the ratio between Dkron Agents and Dkron Servers, an initial goal was set, until
+For the ratio between Dkron Agents and Dkron Servers, an initial goal was set, until
     challenges were found, making it unable to use the desired levels, servers (3 to 5) and agents (0 to 3).
     Below an oversimplification of the challenge will be shared.
-    \item For the benchmark workload parameters, these are simply binary values.
-\end{itemize}
+For the benchmark workload parameters, these are simply binary values.
 
 As for the challenge with setting the desired Dkron Agents replicas, it seems dkron helm chart
 is still neither stable, nor prioritized by Dkron's team, an unfortunate late discovery
@@ -498,6 +435,48 @@ When confounding factors we should confound 1) factors where the interaction is 
 
 \section{Results}
 \label{results}
+In this section I provide the Factorial Analysis results.
+
+Figure \ref{fig:factorsdomain} provides the domains of the factors under analysis and that were used to build the benchmarks.
+Figure \ref{fig:fulloriginalfactors} provides the sign table with the original values of each factor, allowing for a complete overview of each benchmark setup.
+Figure \ref{fig:fullconvertedoriginalfactors} represents the same table of Figure \ref{fig:fullconvertedoriginalfactors}, but with the respective signs of each factor value/category.
+These Figures can be consulted in the Annex.
+
+
+
+Under this experimental design, the goal was to evaluate the failed requests of each benchmark.
+To quantify the effect of each factor on failed requests, the sign matrix was tested for orthogonality. Considering the matrix is composed by 8 experiments and 7 factors, it comes that the matrix is orthogonal under the following conditions:
+
+\begin{itemize}
+    \item Sum of each column is zero.
+    \item Sum of products of each two columns is zero.
+    \item Sum of column squares is $2^{7-4} = 8$.
+\end{itemize}
+
+The matrix (consult Figure \ref{fig:fullconvertedoriginalfactors} in Annex) satisfies all conditions of orthogonality. Hence, the calculation of each effect comes straightforward: $q_{k}=\sum_{k=1}^{K}\sum_{p}^{P}s_{pk} \times y_{p}$, where $q_{k}$ is the effect of factor $k$, $s_{pk}$ is the sign of factor $k$ in experiment $p$, $K$ is the total number of factors under analysis, and $P$ is the total number of benchmarks, or experiments, conducted.
+
+A remark must be made regarding the outcome being evaluated. The failed requests of each benchmark can be analysed in rate or in absolute value. If the primary goal is to understand relative performance, then one should analyse the percentage of failed requests. This is especially useful if benchmarks have varying total numbers of requests, which is the case, and one aims to compare each experiment on a normalised scale. On the other hand, if the primary goal is to understand the impact in terms of volume, one should opt for the absolute number of failed requests. This is more relevant to evaluate the overall impact or size of failures. The following paragraphs provide a brief summary of the factorial analysis conducted for both scenarios, once I believe they are both important.
+
+The outcome expressed in rate and absolute value, as well as the total number of request per benchmark, are provided in Figure \ref{fig:results_totrequests}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{media/factorial_outcome_per_y_plus_totrequests.png}
+    \caption{Experiment Results and Total Number of Requests per Experiment.}
+    \label{fig:results_totrequests}
+\end{figure}
+
+The factorial analysis results for each factor change, depending on the outcome being considered. Please consult the results in Figure \ref{fig:factors_effects}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{media/Effects_Factors.png} \caption{Effects of each Factor, considering the different outcomes.}
+    \label{fig:factors_effects}
+\end{figure}
+
+It is possible to assess that the effect of the factors changes in magnitude, depending on the outcome being considered, and factor B also changes in sign (or its in impact).
+Independently of the outcome being considered, factor A (Has On Demand Jobs) is the one that contributes more towards requests failure. This means that a higher value of Has On Demand Jobs is likely to lead to a higher failure number (or rate) of requests. Other factors that contribute to the failure of requests are, in descending order, interaction AB (DKron Servers), interaction AC (DKron Agents) and factor C (Memory). On the other hand, interaction BC (Concurrent) helps mitigating the number or rate of failed request, as well as the interaction ABC.
+Factor B is negligible when the outcome is expressed in rate.
 
 
 However,
@@ -507,90 +486,78 @@ pods CPU and Memory utilization.
 \section{Conclusion}
 \label{conclusion}
 
+Dkron shows to provide reliability and have two distinct kinds of nodes Servers and Agents.
+Both seem to play a crucial role, Servers to guarantee reliability and Agents to provide scaled performance.
+
+Nevertheless, Dkron's helm chart is still unstable.  Dkron Agents in particular was a factor that unfortunately could not be configured in the
+desired way to extrapolate clear conclusions and answer the initial questions.
+
+%MEMORY LIMIT NOTES: although no memory heavy jobs are done, memory usage was very high (raft?)
+
 \subsection{Limitations}
 Dkron's helm chart is still not stable for an easy deployment. Documentation is lacking, and
-it seems there is no stable helm chart for dkron. Additionally, during bug fixing and deployment
-problem resolving, I was left with the idea that [a lot more other developers face their own
+it seems there is no stable helm chart for dkron. Additionally, during bug fixing and deployment,
+I was left with the idea that [a lot more other developers face their own
 unexpected issues with dkron's helm chart](https://github.com/distribworks/dkron/issues?q=helm).
 
-
-% ! %%%
-% ! %%% EXAMPLES BELOW
-% ! %%%
-
-\begin{table}
-\caption{Table captions should be placed above the
-tables.}\label{tab1}
-\begin{tabular}{|l|l|l|}
-\hline
-Heading level &  Example & Font size and style\\
-\hline
-Title (centered) &  {\Large\bfseries Lecture Notes} & 14 point, bold\\
-1st-level heading &  {\large\bfseries 1 Introduction} & 12 point, bold\\
-2nd-level heading & {\bfseries 2.1 Printing Area} & 10 point, bold\\
-3rd-level heading & {\bfseries Run-in Heading in Bold.} Text follows & 10 point, bold\\
-4th-level heading & {\itshape Lowest Level Heading.} Text follows & 10 point, italic\\
-\hline
-\end{tabular}
-\end{table}
+\section{Annexes}
 
 
-\noindent Displayed equations are centered and set on a separate
-line.
-\begin{equation}
-x + y = z
-\end{equation}
-Please try to avoid rasterized images for line-art diagrams and
-schemas. Whenever possible, use vector graphics instead (see
-%Fig.~\ref{fig1}).
 
-\begin{figure}
-\includegraphics[width=\textwidth]{fig1.eps}
-\caption{A figure caption is always placed below the illustration.
-Please note that short captions are centered, while long ones are
-justified by the macro package automatically.} \label{fig1}
+\subsection{Metrics Visualisation}
+The following Figures provide some visualisations about each experiment. All plots have the same x-axis order: NOs3a0-250-1NO, NOs3a0-500-2YES, NOs3a1-500-1NO,  YESs3a1-250-2NO, NOs7a1-250-1YES, YESs7a1-500-2YES,  YESs7a0-500-1NO, NOs7a0-250-2NO. This corresponds to the following experiment order: 2, 7, 3, 6, 1, 8, 4, 5.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{media/FailureRate_trend.png} \caption{Failure Rate Trend Across Benchmarks}
+    \label{fig:aaa}
 \end{figure}
 
-\begin{theorem}
-This is a sample theorem. The run-in heading is set in bold, while
-the following text appears in italics. Definitions, lemmas,
-propositions, and corollaries are styled the same way.
-\end{theorem}
-%
-% the environments 'definition', 'lemma', 'proposition', 'corollary',
-% 'remark', and 'example' are defined in the LLNCS documentclass as well.
-%
-\begin{proof}
-Proofs, examples, and remarks have the initial word in italics,
-while the following text appears in normal font.
-\end{proof}
-For citations of references, we prefer the use of square brackets
-and consecutive numbers. Citations using labels or the author/year
-convention are also acceptable. The following bibliography provides
-a sample reference list with entries for journal
-articles~\cite{ref_article1}, an LNCS chapter~\cite{ref_lncs1}, a
-book~\cite{ref_book1}, proceedings without editors~\cite{ref_proc1},
-and a homepage~\cite{ref_url1}. Multiple citations are grouped
-\cite{ref_article1,ref_lncs1,ref_book1},
-\cite{ref_article1,ref_book1,ref_proc1,ref_url1}.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{media/Avg_req_duration.png} \caption{Average Request Duration Per Benchmark}
+    \label{fig:bb}
+\end{figure}
 
-\begin{credits}
-\subsubsection{\ackname} A bold run-in heading in small font size at the end of the paper is
-used for general acknowledgments, for example: This study was funded
-by X (grant number Y).
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{media/Avg_req_waitingtime.png} \caption{Average Request Waiting Time Per Benchmark}
+    \label{fig:cc}
+\end{figure}
 
-\subsubsection{\discintname}
-It is now necessary to declare any competing interests or to specifically
-state that the authors have no competing interests. Please place the
-statement with a bold run-in heading in small font size beneath the
-(optional) acknowledgments\footnote{If EquinOCS, our proceedings submission
-system, is used, then the disclaimer can be provided directly in the system.},
-for example: The authors have no competing interests to declare that are
-relevant to the content of this article. Or: Author A has received research
-grants from Company W. Author B has received a speaker honorarium from
-Company X and owns stock in Company Y. Author C is a member of committee Z.
-\end{credits}
-%
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{media/heatmap_avgConnect_avgWait_avgDuration.png} \caption{HeatMap of selected metrics}
+    \label{fig:fddd}
+\end{figure}
+
+\subsection{Factorial Analysis}
+Figure \ref{fig:factorsdomain} provides the domains of the factors under analysis and that were used to build the benchmarks.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{media/FactorAnalysis_DomainFactors.png}
+    \caption{Domain of the Factors.}
+    \label{fig:factorsdomain}
+\end{figure}
+
+Figure \ref{fig:fulloriginalfactors} provides the sign table with the original values of each factor, allowing for a complete overview of each benchmark setup.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{media/FullFactorTable_OriginalFactors.png}
+    \caption{Sign Table with Values.}
+    \label{fig:fulloriginalfactors}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{media/FullFactorTable_onesminusones.png}
+    \caption{Sign Table.}
+    \label{fig:fullconvertedoriginalfactors}
+\end{figure}
+
+
 % ---- Bibliography ----
 %
 % BibTeX users should specify bibliography style 'splncs04'.
