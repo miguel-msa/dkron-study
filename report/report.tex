@@ -348,14 +348,26 @@ A default request (recurrent + concurrent) can be sectioned into the following:
     \item The execution result is stored in the Server's BuntDB instance
 \end{enumerate}
 
-Not considering the Raft consensus algorithm as I consider tanalysing it out of scope of the project,
-the stage which does a lot of processing
+Not considering the Raft consensus algorithm as I believe analysing it is out of scope of the project,
+one of the stages that could be improved are stage 6, 7, and 8.
+Since Dkron seems to already use concurrency, I will skip that technique for hiding latency.
 
-2. Study which portions of the pipeline are the bottleneck (or can become one) and reason
-about which of the techniques studied in the classes could be applied to remove or
-mitigate the bottleneck.
+The exploit of workload properties could be used: by having optimized nodes of Dkron for certain
+kinds of operations, the use of Dkron's Tag-based job dispatch could be used in communion with these
+optimized nodes. Therefore, if the Dkron workloads prove to be heterogenous, this could be a good
+solution to explore.
 
+Similarly, if the Dkron is used for chained jobs, the Dkron admin could look into any request patterns
+and look for optimizations in chaining.
 
+Queuing could also make a positive impact. As I did on my benchmark, Dkron may have periods of peak stress,
+this creates instability on the nodes and leads into a snowball effect of failed requests and increased
+response time. By having a queue to accommodate short overload bursts when load is greater than capacity,
+Dkron could improve stability.
+
+Batching could be used: Instead of sending one request at a time, the server nodes could group requests for a batch
+and send, e.g., to a Dkron Agent, where the Agent would concurrently execute them and respond with the state logs
+in one go also. This also opens opportunities to drop some possibly unnecessary requests or reorder requests.
 
 
 \subsection{Experimental Design}
