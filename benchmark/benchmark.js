@@ -1,6 +1,5 @@
 import http from "k6/http";
-import { check, group, sleep } from "k6";
-import { SharedArray } from "k6/data";
+import { sleep } from "k6";
 
 // Metrics
 // const reqDurationTrend = new Trend("request_duration_trend");
@@ -15,29 +14,6 @@ import { SharedArray } from "k6/data";
 // #region setup
 let STAGE_COUNTER = 0;
 
-const stagesAlreadySent = new Map();
-
-// does the same job, but with double frequency
-function duplicateAndCutJob(json) {
-    // increment name
-    json.name = json.name.replace(/\d+$/, () => STAGE_COUNTER);
-
-    // cut repeat time wait in half
-    const regex = /@every (\d+)s/;
-    const match = json.schedule.match(regex);
-
-    if (match) {
-        const originalNum = parseInt(match[1], 10);
-        const newNum = Math.floor(originalNum / 2);
-
-        json.schedule = json.schedule.replace(regex, `@every ${newNum}s`);
-    } else {
-        console.log(`could not cut in half: ${json.schedule}`);
-    }
-
-    return json;
-}
-
 function forbidConcurrent(json) {
     json.concurrency = "forbid";
     return json;
@@ -47,9 +23,6 @@ let secvalue = 20;
 
 // const createdJobNames = new Map();
 async function addScheduledJobs(allowConcurrent, jobName) {
-    // duplicate job
-    // const jobName = "quick" + STAGE_COUNTER + VU;
-    // createdJobNames.set(jobName, "");
     console.log("created::: ", jobName);
     quickJob.name = jobName;
 
@@ -57,10 +30,6 @@ async function addScheduledJobs(allowConcurrent, jobName) {
     quickJob.schedule = `@every ${secvalue}s`;
 
     secvalue = Math.floor(secvalue / 2);
-
-    // avoids UVs trying to create a job that already was created
-    //if (!stagesAlreadySent.has(STAGE_COUNTER)) {
-    //   stagesAlreadySent.set(STAGE_COUNTER);
 
     if (!allowConcurrent) {
         //quick sleep
@@ -78,11 +47,6 @@ async function addScheduledJobs(allowConcurrent, jobName) {
     }
 
     STAGE_COUNTER++;
-    // jobs.forEach((job, idx) => {
-    //     jobs[idx] = duplicateAndCutJob(job);
-    //     console.log(jobs[idx]);
-    // });
-    // }
 }
 
 // ----------------------
@@ -134,14 +98,12 @@ function createOnDemandStress(allowConcurrent) {
     }
 }
 
-//const jobs = [quickJob /* , cpuStress, ioStress, memoryStress */];
-
 // #endregion
 // --------------------------------------------------
 // ----------------- SETUP END ----------------------
 // --------------------------------------------------
 
-const DKRON_LB = "http://:8080"; // ! CHANGE THIS
+const DKRON_LB = "http://135.225.10.231:8080"; // ! CHANGE THIS
 
 export const options = {
     stages: [
@@ -152,12 +114,10 @@ export const options = {
 };
 
 const DO_ON_DEMAND_JOBS = true; // ! CHANGE THIS
-const CONCURRENT_ALLOW = false; // ! CHANGE THIS
+const CONCURRENT_ALLOW = true; // ! CHANGE THIS
 
 let ON_DEMAND_EVALUATED = false;
 
-// const createdJobNames = new Map();
-// const createdJobNames = new SharedArray("createdJobNames", () => []);
 export default function () {
     if (!ON_DEMAND_EVALUATED) {
         if (DO_ON_DEMAND_JOBS) {
@@ -178,24 +138,3 @@ export default function () {
 
     sleep(30);
 }
-
-// console.log("All scheduled jobs deleted");
-
-// export function teardown() {
-//     console.log(`Deleting ${createdJobNames.length} jobs...`);
-//     for (const jobName of createdJobNames) {
-//         const res = http.del(`${DKRON_LB}/v1/jobs/${jobName}`, {
-//             headers: { "Content-Type": "application/json" },
-//         });
-//         console.log(`Deleting ${jobName}...: ${res.status}`);
-//     }
-
-//     // for (const [k, v] of createdJobNames.entries()) {
-//     //     const res = http.del(`${DKRON_LB}/v1/jobs/${k}`, {
-//     //         headers: { "Content-Type": "application/json" },
-//     //     });
-//     //     console.log(`Deleting ${k}...: ${res.status}`);
-//     // }
-
-//     console.log("All scheduled jobs deleted");
-// }
