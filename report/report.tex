@@ -11,6 +11,7 @@
 \usepackage{hyperref}
 \usepackage{amsmath}
 \usepackage{parselines}
+\usepackage{listings}
 % Used for displaying a sample figure. If possible, figure files should
 % be included in EPS format.
 %
@@ -45,7 +46,7 @@ WRITE ABSTRACT HERE
 \par
 \text{Commit hash:}\textbf{PUT COMMIT HASH HERE}
 
-\keywords{Dkron \and Distributed \and Benchmark \and Scalability \and Consensus \and Dkron Server \ and Dkron Agent .}
+\keywords{Dkron \and Distributed \and Benchmark \and Scalability \and Consensus \and Dkron Server \ and Dkron Agent \and Raft.}
 %
 %
 %
@@ -131,11 +132,11 @@ A server does everything an Agent does (does it? CHECK better), plus:
 \begin{itemize}
     \item schedules the jobs
     \item handles data storage
-    \item participate on leader (raft) election
+    \item participate on leader (Raft) election
     \item dispatches the execution of jobs either to Agents, or other Servers (CHECK: only other servers???).
 \end{itemize}
 
-A Dkron cluster has a leader, for raft based distribution, which is responsible to start job execution queries in the cluster.
+A Dkron cluster has a leader, for Raft based distribution, which is responsible to start job execution queries in the cluster.
 
 By default, all nodes execute each job. This can be controlled through the use of tags and
 a count of target nodes having this tag. "This allows to run jobs across a cluster of any size and with any
@@ -157,25 +158,23 @@ CHECK: Create a Job @ https://dkron.io/docs/basics/getting-started more details 
 THIS INFO MAY BE TRANSFERRED TO INTRO AND INTRO MAY SUFFER CHANGES!!! REVIEW
 
 \subsection{Relevant/Interesting characteristics}
-\begin{itemize}
-    \item Concurrency
-    \item Cron spec support
-\end{itemize}
-
-\subsection{Executors}
-
-\subsection{Metrics}
-\subsection{Processors}
-\subsection{Job Retries}
-\subsection{Embedded Storage}
-\subsection{Target nodes spec}
-\subsection{Clustering}
-\label{clustering}
-
-
-
-
-
+\begin{enumerate}
+    \item \textbf{Concurrency:} A job can be either ran concurrently, by default,
+    allowing for overlapping jobs, or forbid concurrency.
+    \item \textbf{Cron spec support:} A job can be defined either by using Dkron's
+    pre-defined schedules, which are more.
+    declarative, e.g., \textit{@hourly}, or using cron expression format.
+    \item \textbf{Executors:} Plugins to execute the jobs, e.g., Shell to run the job in
+    the current node, or HTTP to send a request.
+    \item \textbf{Metrics:} Dkron can send metrics to Statsd and provide prometheus format metrics.
+    \item \textbf{Job Retries:} A job can be declared to retry in case of failure.
+    \item \textbf{Embedded Storage:} Dkron uses an embedded KV store based on BuntDB.
+    \item \textbf{Target nodes spec:} By default every node will run a job, however there is
+    the ability to set tags for jobs to be ran only by target nodes identified with those
+    same tags.
+    \item \textbf{Clustering:} Clustering in Dkron provides fault tolerance when the
+    quorum is equal or higher than 3.
+\end{enumerate}
 
 % todo: make this a paragraph instead ???
 \subsection{No Single Point of Failure}
@@ -187,7 +186,145 @@ so - Dkron fixes this problem by, as they claim, being the only existing schedul
 Therefore, with acceptable performance, whilst providing Reliability? and Availability?, Dkron is an interesting solution
 for use-cases that must guarantee fault-tolerance.
 
-\section{Experimental Design}
+\section{Benchmarking}
+
+Due to the project time constraints, an extensive literature review was not performed, however
+a great portion of this project's approach, execution and reporting is done based on the acquired
+knowledge in the course.
+
+During the limited research, I could not find a convincing standard benchmark to use or be based on.
+Instead, I focused on researching the particularities of Dkron and exploiting those to gather conclusions and,
+admittedly, confirm some deductions I was forming throughout Dkron's design analysis.
+
+One of the clearest characteristic for performance analysis in Dkron is its use of Raft to guarantee
+reliability. This, along the fact that all the dkron cluster members of kind Server persist,
+between themselves, all the job responses' logs.
+
+~\\ Thus, the intuitive conclusion for Dkron is:
+\begin{itemize}
+    \item Increase Dkron Servers to improve fault-tolerance, but increases overhead.
+    \item Increase Dkron Agents to improve performance.
+\end{itemize}
+
+
+Nevertheless, solely increasing Agents, even with unlimited costs, is not an infinite answer.
+Even more so considering that, unless the
+\href{job is targeted to a set of tags}{https://dkron.io/docs/usage/target-nodes-spec},
+every member in the cluster will run the job.
+
+With very limited, information on Dkron's scaling capabilities either on their
+documentation or elsewhere, one can assume, contention and crosstalk will increase as most systems do.
+Without a formal baseline to which to compare with, I took the liberty to thinker with a synthetic workload
+to push the limits of Dkron.
+
+Having this, considering the Universal Scalability Law, the properties that would most
+affect Dkron scalability could be:
+
+\begin{itemize}
+    \item Increase in Dkron Servers may increase:
+     \begin{itemize}
+        \item Contention: since there are serial parts of the dkron process like,
+        receiving, dispatching, and storing a job. The serial part of the job itself, will
+        depend on the process to execute associated to the job, this can be anything.
+        \item Crosstalk: this can be assumed to be a big part of these kinds of members since
+        a server needs frequent communication between its consensus peers, e.g., for
+        leader election, and state coherence.
+     \end{itemize}
+    \item Increase in Dkron Agents may increase:
+     \item Contention: having more members in the cluster increases the cluster provisioning, maintenance,
+     and load balancing overhead.
+     \item Crosstalk: although not as much as Dkron Servers, but Agents need to join the cluster and become
+     known by the Servers for job dispatch, as well every new agent is a new running job that needs (by default)
+     to be stored by servers, requiring state coherence.
+\end{itemize}
+
+% The stated above needs to be empirically tested, as there is not much information on the
+% internal qualities of Dkron. The analysis on this project are mostly heuristic based on the
+% theoretical lectures of the course, and plays a role not only on performance analysis, but also
+% on exploring the system itself and the ways of its deployment.
+
+
+\subsubsection{Built Heuristic Benchmak}
+
+The benchmark was built with \href{K6}{https://k6.io/docs/} in JavaScript.
+
+I did experiment with following:
+\begin{itemize}
+    \item CPU-focused job: doing a high bound loop with arithmetic computations
+    \item Memory-focused job: read data and pipe it
+\end{itemize}
+
+However, these jobs proved to be very heavy for the Dkron pods, as it would cause crashes and even no
+fault recovery unless manually fixed.
+
+The final benchmark does 2 simple jobs that do the same but in different manners:
+\begin{itemize}
+    \item schedule echo - this job will run indefinitely on the frequency defined
+    \item immediately request echo
+\end{itemize}
+
+These jobs are either ran by the pod that received the job, or dispatched, by a Server, to another pod.
+
+Regarding immediately requesting echo, k6 provides an interface to simulate multiple virtual users
+making requests.
+
+% \begin{lstlisting}[language=javascript]
+% export const options = {
+%     stages: [
+%         { duration: "60s", target: 20 },
+%         { duration: "60s", target: 60 },
+%         { duration: "60s", target: 0 },
+%     ],
+% };
+% \end{lstlisting}
+\begin{verbatim}
+export const options = {
+    stages: [
+        { duration: "60s", target: 20 },
+        { duration: "60s", target: 60 },
+        { duration: "60s", target: 0 },
+    ]
+};
+\end{verbatim}
+
+As observed in the code in FIGX, this benchmarks runs for 3 minutes ramping up virtual
+users to 20 during the first sixty seconds, then ramping up from 20 to 60 in the next sixty seconds,
+and then ramping down.
+
+For more detail on the benchmark refer to \ref{}, where it is explained in
+more detail after discussing the Experimental Design.
+
+% ! TODO: make this after explaining FACTORS ???
+The script can be analysed in \textit{/benchmark/benchmark.js}. The general idea is:
+\begin{itemize}
+    \item When the fac
+\end{itemize}
+
+
+
+--
+Performance Metrics:
+- talk about what are they and which I selected
+- brief on latency vs throughput
+- talk about performance limitations and which I had
+--
+
+Due to lack of material and examples on benchmarking job schedulers, the benchmarking was heuristics.
+
+\subsection{Dkron Under the Universal Scalability Law}
+
+1. Devise a simple benchmark that allows to assess the behaviour of the system.
+2. Analyse the scalability properties of the system.
+3. Analyse how the scalability properties can be explained considering the Universal Scalability Law.
+
+\subsection{Dkron Bottlenecks}
+1. Decompose a request into a pipeline of stages.
+2. Study which portions of the pipeline are the bottleneck (or can become one) and reason
+about which of the techniques studied in the classes could be applied to remove or
+mitigate the bottleneck.
+
+
+\subsection{Experimental Design}
 DESCRIPTION AND JUSTIFICATION OF THE EXPERIMENTAL DESIGN
 
 After analysing Dkron's design and particularities, the Experimental Design was initiated with the
@@ -211,7 +348,9 @@ in a total of 8 experiments. Below is the signed table FIGX and respective resul
 %\caption{dkron Logo .} \label{fig1}
 \end{figure}
 
-\subsection{Factors}
+
+
+\subsubsection{Factors}
 As can be observed, the factors are the following:
 \begin{itemize}
     \item HasOnDemandJobs
@@ -225,7 +364,8 @@ As can be observed, the factors are the following:
 Regarding the rationale for the choice of each factor. When deciding for factors,
 after analysing the particularities of Dkron, some questions were raised:
 \begin{enumerate}
-    \item
+    \item question1
+    \item question2
 \end{enumerate}
 
 The conclusions from the analysis and consequently, the attempt to answer the above questions
@@ -236,11 +376,11 @@ and [this github](https://github.com/distribworks/dkron/issues/578) issue confir
 one time, executed jobs. The main exploratory idea was to analyse how immediate jobs are reacted to
 i.e. if they have some threshold to be accepted in case all the pods are busy, or if in the case
 all the pods are busy, the request is simply rejected.
-\par \textbf{CPU Limit (m):} Dkron uses Raft to achieve consensus between the Dkron Agents.
+\par \textbf{CPU Limit(m):} Dkron uses Raft to achieve consensus between the Dkron Agents.
 Distributed consensus protocols usually are expected to be CPU and Memory bound therefore,
 this factor is relevant to observe the impact of the Dkron Servers realizing consensus and
 providing reliability.
-\par \textbf{Memory Limit (GiB):} Likewise, due to the actions of state management and replication
+\par \textbf{Memory Limit(GiB):} Likewise, due to the actions of state management and replication
 being heavily required and frequent in these kinds of protocols, Memory also seemed a relevant
 factor to take into account.
 \par \textbf{Dkron Agents:} A Dkron Agent has a very simple goal, to execute jobs dispatched by
@@ -257,7 +397,9 @@ desired way to extrapolate clear conclusions and answer the initial questions.
 
 MEMORY LIMIT NOTES: although no memory heavy jobs are done, memory usage was very high (raft?)
 
-\subsection{Factor Levels}
+
+
+\subsubsection{Factor Levels}
 Acknowledging there is the method of $2^k$ Factorial Design, it would be interesting to
 try with some minimum and maximum values to look for \textit{unidirectional effects} and
 in case the factor is has a unidirectional effect decide on the values from there. However,
@@ -283,7 +425,9 @@ Particularly, the issues seems to be with one of the templates \textit{agent-dep
 \textit{agent-hpa} which is ignoring the agent's set replica count and only creates 1,
 independently of the set value, 0 or 100.
 
-\subsection{Confounded Factors}
+
+
+\subsubsection{Confounded Factors}
 Confounding is used to reduce the number of ran experiments while being able to use a broader range
 of factors. It is relevant to note that reducing the number of experiments in favor of time and cost savings
 and sole increase in factors is not the best approach. Instead, it should be given preference to confound
@@ -298,16 +442,18 @@ When confounding factors we should confound 1) factors where the interaction is 
         a scheduler are not heavy, and sometimes of workflow continuation or triggering.
         Both of these confounded factors would interact more if confounded with, e.g., Dkron Servers,
         for reasons of consensus overhead already explored.
-    \item textbf{HasOnDemandJobs and Memory confounded for Dkron Agents:} same rationale as
+    \item \textbf{HasOnDemandJobs and Memory confounded for Dkron Agents:} same rationale as
     HasOnDemandJobs + CPU Limit.
-    \item textbf{CPU Limit and Memory Limit for Concurrency}: same rationale as HasOnDemandJobs
+    \item \textbf{CPU Limit and Memory Limit for Concurrency}: same rationale as HasOnDemandJobs
     + CPU Limit.
 \end{itemize}
+
 
 
 \section{Results}
 \label{results}
 \section{Conclusion}
+\label{conclusion}
 
 \subsection{Limitations}
 Dkron's helm chart is still not stable for an easy deployment. Documentation is lacking, and
