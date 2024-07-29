@@ -40,15 +40,19 @@
 \begin{abstract}
 Dkron is a golang written distributed cron job scheduler that is
 fault-tolerant (Reliable), and allows for concurrent job execution.
-In this project...
-Summary Method?
-Summary Results?
+In this project tools like Azure, K9, K8, K6, and Helm were used to develop a
+deployment of Dkron into (azure) AKS. The Dkron cluster was subject to benchmarking
+in order to extrapolate data and form conclusions on the observed system's behavior.
+Failed Requests was the metric evaluated when doing fractional factorial analysis.
+The factor Concurrent and the effect interaction between the factors HasOnDemandJobs,
+CPU Limit, and Memory Limit, contribute to a lower request failure. All the other factors and interactions contribute
+to an increase of request failure.
 \end{abstract}
 
 \par
 \text{Repository: \href{https://github.com/miguel-msa/dkron-study}{github.com/miguel-msa/dkron-study}}
 \par
-\text{Commit hash:} \textbf{PUT COMMIT HASH HERE}
+\text{Commit hash:} \textbf{5d3aa963e662f30096d4ce818194657248701539}
 \par
 \text{Video link (youtube):} \textbf{https://youtu.be/SxbSg0Dx16s}
 
@@ -70,8 +74,8 @@ how do they interact, and how do they agree on a decision. Agreeableness in dist
 systems is a concept of grand study, where we have examples like Paxos and Raft, being both
 consensus algorithms.
 
-A job scheduling system purpose is to automate execution of jobs, do repetitive tasks,
-and when well-defined and organized, automate entire workflows. It is expected that these jobs run within defined conditions,
+A job scheduling system purpose is to automate execution of jobs, do repetitive tasks
+and, when well-defined and organized, automate entire workflows. It is expected that these jobs run within defined conditions,
 for instance time-based conditions. Other use cases are resource management
 (e.g., scheduled to execute for off-peak hours) and avoid manual intervention.
 
@@ -84,16 +88,15 @@ Dkron is a distributed job scheduling system that on the surface:
     \item Easy to deploy with built-in replicated storage (BuntDB) relying on the Raft protocol.
     \item Provides a Web-GUI for administration.
 \end{enumerate}
-The above characteristics, and more, are also explored in \ref{system_description}
+The above characteristics, and more, are also explored in section \ref{system_description}.
 
-\break
 When selecting the system to analyse, some of the factors driving the choice were:
 \begin{enumerate}
     \item Interest in exploring \href{https://go.dev/}{Go} source code.
-    \item Explore a system that is not a database
+    \item Explore a system that is not a database.
 \end{enumerate}
 From the options, Dkron raised a question:
-\textit{What is the performance of a scheduler, seemingly, focused on availability and reliability}
+\textit{What is the performance of a scheduler, seemingly, focused on availability and reliability?}
 
 As this is not thoroughly explored by Dkron, I got interested in this system and how it would scale
 for reliability.
@@ -104,13 +107,6 @@ Its claims are not bold, neither on its performance, nor on how it actually does
 opportunity to not only explore something unclaimed, but also on how Dkron found the
 optimal point, if exists, between performance and reliability.
 
-% TODO
-% ! TODO: this text needs to change
-% TODO: these claims are NOT CAREFULLY CONSIDERED! REVIEW THIS!!!
-~\\ The analysis will consider these use-cases and apply a ...benchmark... to analyse the performance and infer Dkron's
-performance on workloads similar, as in trying to represent, to such use-cases.
-% TODO: these claims are NOT CAREFULLY CONSIDERED! REVIEW THIS!!!
-
 \begin{figure}[h]
 \centering
 %\caption{dkron Logo .} \label{fig1}
@@ -119,13 +115,12 @@ performance on workloads similar, as in trying to represent, to such use-cases.
 \section{System Description}
 \label{system_description}
 
-Further exploring Dkron's characteristics from the summary in the introduction, some of Dkron's particularities are:
+Further exploring Dkron's characteristics from the summary in the introduction, some of its  particularities are:
 \begin{enumerate}
     \item \textbf{Concurrency:} A job can be either ran concurrently, by default,
     allowing for overlapping jobs, or forbid concurrency.
     \item \textbf{Cron spec support:} A job can be defined either by using Dkron's
-    pre-defined schedules, which are more.
-    declarative, e.g., \textit{@hourly}, or using cron expression format.
+    pre-defined schedules, which are more declarative, e.g., \textit{@hourly}, or using cron expression format.
     \item \textbf{Executors:} Plugins to execute the jobs, e.g., Shell to run the job in
     the current node, or HTTP to send a request.
     \item \textbf{Metrics:} Dkron can send metrics to Statsd and provide prometheus format metrics.
@@ -133,7 +128,7 @@ Further exploring Dkron's characteristics from the summary in the introduction, 
     \item \textbf{Embedded Storage:} Dkron uses an embedded KV store based on BuntDB.
     \item \textbf{State Storage:} The scheduler state is replicated between all
     server nodes using \href{https://www.serf.io/}{Serf}.
-    \item \textbf{Target nodes spec:} By default every node will run a job, however there is
+    \item \textbf{Target nodes spec:} By default, every node will run a job, however there is
     the ability to set tags for jobs to be ran only by target nodes identified with those
     same tags.
     \item \textbf{Clustering:} Clustering in Dkron provides fault tolerance when the
@@ -144,7 +139,7 @@ Further exploring Dkron's characteristics from the summary in the introduction, 
 
 
 Dkron has 2 kinds of nodes: Server and Agent.
-Both are cluster members available to run scheduled jobs
+Both are cluster members available to run scheduled jobs.
 
 An agent can handle job executions, run scripts and return the resulting output to the server.
 
@@ -172,16 +167,7 @@ All execution responses are gathered by the scheduler and stored in the BuntDB s
 \end{verbatim}
 
 Above is an example of a job that should run only on one node, in any that has the value \textit{web}
-for the tag \textit{my\_role}
-
-
-
-
---
-Dkron can either run on a single node (by default) or on a cluster with multiple nodes.
-
-CHECK: Create a Job @ https://dkron.io/docs/basics/getting-started more details there might be interesting
-
+for the tag \textit{my\_role}.
 
 
 % todo: make this a paragraph instead ???
@@ -216,11 +202,11 @@ between themselves, all the job responses' logs.
 
 Nevertheless, solely increasing Agents, even with unlimited costs, is not an infinite answer.
 Even more so considering that, unless the
-\href{job is targeted to a set of tags}{https://dkron.io/docs/usage/target-nodes-spec},
+\href{https://dkron.io/docs/usage/target-nodes-spec}{job is targeted to a set of tags},
 every member in the cluster will run the job.
 
-With very limited, information on Dkron's scaling capabilities, one can assume, contention and crosstalk will increase as most systems do.
-Without a formal baseline to which to compare with, I took the liberty to thinker with a synthetic workload
+With very limited information on Dkron's scaling capabilities, one can assume, contention and crosstalk will increase as most systems do.
+Without a formal baseline to which to compare with, I took the liberty to think about a synthetic workload
 to push the limits of Dkron whilst considering the University Scalability Law and its properties.
 
 \[
@@ -238,7 +224,7 @@ where:
 Having this, considering the Universal Scalability Law, the system characteristics that would most
 affect Dkron scalability could be:
 
-Increase in Dkron Servers may increase contention, since there are serial parts of the dkron process like,
+Increase in Dkron Servers may increase contention, since there are serial parts of the dkron process like
 receiving, dispatching, and storing a job. The serial part of the job itself, will
 depend on the process to execute associated to the job, this can be anything. Regarding
 crosstalk, this can be assumed to be a big part of these kinds of members since
@@ -246,27 +232,27 @@ a server needs frequent communication between its consensus peers, e.g., for
 leader election, and state coherence.
 
 Increase in Dkron Agents may increase contention, having more members in the cluster increases the cluster provisioning, maintenance,
-and load balancing overhead. Regarding crosstalk, although not as much as Dkron Servers, but Agents need to join the cluster and become
+and load balancing overhead. Regarding crosstalk, although not as much as Dkron Servers, Agents need to join the cluster and become
 known by the Servers for job dispatch, as well every new agent is a new running job that needs (by default)
 to be stored by servers, requiring state coherence.
 
-\subsubsection{Built Heuristic Benchmak}
+\subsection{Built Heuristic Benchmak}
 
 Dkron does not make any claims on its performance and scalability capacities. Joined to the fact that
 I could not find any relevant ready-made or standard benchmarks, heuristics were used.
 
 The benchmark was built with \href{https://k6.io/docs/}{K6} in JavaScript. I did experiment with
-the following: CPU-focused job, doing a high bound loop with arithmetic computations;
-and Memory-focused job, read data and pipe it.
+the following: 1) CPU-focused job, doing a large loop with arithmetic computations;
+2) Memory-focused job, read data and pipe it.
 However, these jobs proved to be very heavy for the Dkron pods, as it would cause crashes and even no
 fault recovery unless manually fixed.
 
-The final resulting benchmark used to extrapolate the metrics, does 2 simple jobs
+The final resulting benchmark used to extrapolate the metrics does 2 simple jobs
 that execute the same, an echo, but in different manners: 1) schedule echo, this job will run indefinitely every time, associated to
 the frequency defined, e.g., (echo) every 2 seconds.
 2) immediately request echo, this job is a basically a post request that expects an immediate
 response.
-These jobs are either ran by the pod that received the job, or dispatched, by a Server, to another pod.
+These jobs are either ran by the pod that received the job, or dispatched by a Server to another pod.
 
 Regarding immediately requesting echo, k6 provides an interface to simulate multiple virtual users
 making requests.
@@ -281,16 +267,16 @@ export const options = {
 };
 \end{verbatim}
 
-As observed in the code in FIGX, this benchmarks runs for 3 minutes ramping up virtual
+As observed in the code above, this benchmarks runs for 3 minutes ramping up virtual
 users to 20 during the first sixty seconds, then ramping up from 20 to 60 in the next sixty seconds,
 and then ramping down.
 
 This benchmark has the goal of extremely stressing the cluster with an increasing amount of
-workload, i.e., scheduled jobs. A schedules job once created, will run indefinitely for its frequency
+workload, i.e., scheduled jobs. A scheduled job once created, will run indefinitely for its frequency
 unless deleted, meaning that as time passes, the stress increases.
 
 The script can be analysed in \textit{/benchmark/benchmark.js}.
-The purpose of this was to be able benchmark the response time over an environment where Dkron
+The purpose of this was to be able to benchmark the response time over an environment where Dkron
 is under a big stress. With this, we could extrapolate from k6 the response time and error rate,
 which was the main goal. The reasoning behind this is that a scheduler is a system that, under
 well-organized definitions, is set in such a way where it should have always the opportunity to
@@ -300,12 +286,9 @@ state coherency, state persistance, and job dispatch and execution.
 
 Other performance metrics like throughput and utilization could also be explored.
 However, response time, which includes latency seemed more suitable for a job scheduler.
-More discussion on this topic of metrics can be found in \ref{results}
 
 
 \subsection{Dkron Bottlenecks}
-1. Decompose a request into a pipeline of stages.
-
 A default request (recurrent + concurrent) can be sectioned into the following:
 \textbf{1)} Request done to AKS Load Balancer,
 \textbf{2)}Load Balancer forwards to one of the pods (servers or agents),
@@ -316,8 +299,8 @@ A default request (recurrent + concurrent) can be sectioned into the following:
 \textbf{7)} The pod executing the job, executes it and responds with the execution result,
 \textbf{8)} The execution result is stored in the Server's BuntDB instance.
 
-Not considering the Raft consensus algorithm as I believe analysing it is out of scope of the project,
-one of the stages that could be improved are stage 6, 7, and 8.
+Not considering the Raft consensus algorithm, as I believe analysing it is out of scope of the project,
+one of the stages that could be improved are stages 6, 7, and 8.
 Since Dkron seems to already use concurrency, I will skip that technique for hiding latency.
 
 The exploit of workload properties could be used: by having optimized nodes of Dkron for certain
@@ -350,23 +333,21 @@ in a total of 8 experiments.
 
 \subsubsection{Factors}
 
-As can be observed, the factors are the following: HasOnDemandJobs, CPU Limit (m),
+As can be observed in Figure \ref{fig:factorsdomain} in the Annexes, the factors are the following: HasOnDemandJobs, CPU Limit (m),
 Memory Limit (GiB), Dkron Servers, Dkron Agents, Concurrent.
-Regarding the rationale for the choice of each factor. When deciding for factors,
-after analysing the particularities of Dkron, some questions were raised:
+As for the rationale for the choice of each factor, some questions were raised
+after analysing the particularities of Dkron:
 \begin{enumerate}
     \item How can Dkron handle high peak overload and still function, i.e., do Raft, execute and
     dispatch?
     \item How affected are immediate requests response time when Dkron is on high load?
 \end{enumerate}
 
-The conclusions from the analysis and consequently, the attempt to answer the above questions
-can be found in subsection \ref{results}
-
+Let's explore the factors in regard to Dkron.
 \textbf{HasOnDemandJobs:} Dkron is mainly built to schedule recurring jobs,
-and \href{https://github.com/distribworks/dkron/issues/578}{this github issue} confirms that it was not initially planned to support immediately,
-one time, executed jobs. The main exploratory idea was to analyse how immediate jobs are reacted to
-i.e. if they have some threshold to be accepted in case all the pods are busy, or if in the case
+and \href{https://github.com/distribworks/dkron/issues/578}{this github issue} confirms that it was not initially planned
+to support immediate one time jobs. The main exploratory idea was to analyse how immediate jobs are reacted to,
+i.e., if they have some threshold to be accepted in case all the pods are busy, or if in the case
 all the pods are busy, the request is simply rejected.
 \textbf{CPU Limit(m):} Dkron uses Raft to achieve consensus between the Dkron Agents.
 Distributed consensus protocols usually are expected to be CPU and Memory bound therefore,
@@ -381,7 +362,7 @@ seemed to be the clear factor to increase for performance gains.
 \textbf{Dkron Servers:} Dkron Servers do what Dkron Agents do plus scheduling of jobs,
 handling data storage and participating on leader election. Since these 2 present very
 distinguishable characteristics, it seemed relevant to analyse their interaction.
-\textbf{Concurrent:} Dkron is states that if no Dkron Agent/Server is available
+\textbf{Concurrent:} Dkron states that, if no Dkron Agent/Server is available, the job will be rejected.
 
 
 \subsubsection{Factor Levels}
@@ -435,17 +416,17 @@ When confounding factors we should confound 1) factors where the interaction is 
 
 \section{Results}
 \label{results}
-In this section I provide the Factorial Analysis results.
+In this section, the Factorial Analysis results are provided.
 
-Figure \ref{fig:factorsdomain} provides the domains of the factors under analysis and that were used to build the benchmarks.
+Figure \ref{fig:factorsdomain} provides the domains of the factors under analysis, which were used to build the benchmarks.
 Figure \ref{fig:fulloriginalfactors} provides the sign table with the original values of each factor, allowing for a complete overview of each benchmark setup.
-Figure \ref{fig:fullconvertedoriginalfactors} represents the same table of Figure \ref{fig:fullconvertedoriginalfactors}, but with the respective signs of each factor value/category.
+Figure \ref{fig:fullconvertedoriginalfactors} represents the same table of Figure \ref{fig:fulloriginalfactors}, but with the respective signs of each factor value/category.
 These Figures can be consulted in the Annex.
 
 
 
 Under this experimental design, the goal was to evaluate the failed requests of each benchmark.
-To quantify the effect of each factor on failed requests, the sign matrix was tested for orthogonality. Considering the matrix is composed by 8 experiments and 7 factors, it comes that the matrix is orthogonal under the following conditions:
+To quantify the effect of each factor on failed requests, the sign matrix was tested for orthogonality. Considering the matrix is composed by 8 experiments and 7 factors, it comes that the matrix is orthogonal under the following conditions \cite{mm2024}:
 
 \begin{itemize}
     \item Sum of each column is zero.
@@ -453,7 +434,7 @@ To quantify the effect of each factor on failed requests, the sign matrix was te
     \item Sum of column squares is $2^{7-4} = 8$.
 \end{itemize}
 
-The matrix (consult Figure \ref{fig:fullconvertedoriginalfactors} in Annex) satisfies all conditions of orthogonality. Hence, the calculation of each effect comes straightforward: $q_{k}=\sum_{k=1}^{K}\sum_{p}^{P}s_{pk} \times y_{p}$, where $q_{k}$ is the effect of factor $k$, $s_{pk}$ is the sign of factor $k$ in experiment $p$, $K$ is the total number of factors under analysis, and $P$ is the total number of benchmarks, or experiments, conducted.
+The matrix (consult Figure \ref{fig:fullconvertedoriginalfactors} in Annex) satisfies all conditions of orthogonality. Hence, the calculation of each effect comes straightforward: $q_{k}=\sum_{k=1}^{K}\sum_{p=1}^{P}s_{pk} \times y_{p}$, where $q_{k}$ is the effect of factor $k$, $y_{p}$ is the outcome of experienece $p$, $s_{pk}$ is the sign of factor $k$ in experiment $p$, $K$ is the total number of factors under analysis, and $P$ is the total number of benchmarks, or experiments, conducted.
 
 A remark must be made regarding the outcome being evaluated. The failed requests of each benchmark can be analysed in rate or in absolute value. If the primary goal is to understand relative performance, then one should analyse the percentage of failed requests. This is especially useful if benchmarks have varying total numbers of requests, which is the case, and one aims to compare each experiment on a normalised scale. On the other hand, if the primary goal is to understand the impact in terms of volume, one should opt for the absolute number of failed requests. This is more relevant to evaluate the overall impact or size of failures. The following paragraphs provide a brief summary of the factorial analysis conducted for both scenarios, once I believe they are both important.
 
@@ -474,31 +455,50 @@ The factorial analysis results for each factor change, depending on the outcome 
     \label{fig:factors_effects}
 \end{figure}
 
-It is possible to assess that the effect of the factors changes in magnitude, depending on the outcome being considered, and factor B also changes in sign (or its in impact).
-Independently of the outcome being considered, factor A (Has On Demand Jobs) is the one that contributes more towards requests failure. This means that a higher value of Has On Demand Jobs is likely to lead to a higher failure number (or rate) of requests. Other factors that contribute to the failure of requests are, in descending order, interaction AB (DKron Servers), interaction AC (DKron Agents) and factor C (Memory). On the other hand, interaction BC (Concurrent) helps mitigating the number or rate of failed request, as well as the interaction ABC.
+It is possible to assess that the effect of the factors changes in magnitude, depending on the outcome being considered, and factor B also changes in sign (or its impact).
+Independently of the outcome being considered, factor A (Has On Demand Jobs) is
+the one that contributes more towards requests failure. This means that a
+higher value of Has On Demand Jobs is likely to lead to a higher failure number
+(or rate) of requests. Other factors that contribute to the failure of requests are,
+in descending order, interaction AB (Dkron Servers), interaction AC
+(Dkron Agents) and factor C (Memory). On the other hand, interaction BC (Concurrent)
+helps mitigating the number or rate of failed request, as well as the interaction ABC.
 Factor B is negligible when the outcome is expressed in rate.
 
-
-However,
-a small note on utilization, although not formally registered in the report, I was observing the
-pods CPU and Memory utilization.
+Finally, from the metrics gathered through k6, the metric req\_duration provides the response
+time. Without much consideration, but solely looking into the values, the response time shows to
+tend to grow as we have more Dkron Servers. This was expected since there are more Servers working
+in the consensus. This means that the reliability provided by Dkron is easily noticeable with small
+increments - in my benchmark experiments 3 to 7 Servers. However, due to time constraints, I
+could not finish the response time analysis to provide a more in-dept conclusion.
 
 \section{Conclusion}
 \label{conclusion}
 
-Dkron shows to provide reliability and have two distinct kinds of nodes Servers and Agents.
-Both seem to play a crucial role, Servers to guarantee reliability and Agents to provide scaled performance.
+From the analysis of Dkron, the major assumption could be concluded when looking at K6 response time
+metric: that increasing the amount of Dkron Servers increases response time. This is due
+to the nature of the reliability characteristic supported by Dkron Servers, increasing crosstalk.
 
-Nevertheless, Dkron's helm chart is still unstable.  Dkron Agents in particular was a factor that unfortunately could not be configured in the
-desired way to extrapolate clear conclusions and answer the initial questions.
+At the beginning of the analysis I was curious to understand the behavior of Dkron when
+in high stress. It seems to handle relatively when, i.e., although the nodes become unstable,
+Dkron is still able to respond to incoming requests and also execute the existing jobs. Nevertheless,
+nodes crashed a lot due to high memory and cpu usage as I observed in K9 during the benchmark.
+
+Other particularity that I observed is that, at most, 2 Servers were at 100\% cpu utilization, while
+the other peers were relatively stable. It seems the Raft leader has a load a lot higher than its
+peers, making Dkron leaders vulnerable to crashed, requiring frequent new leader elections.
+
+In the end, Dkron shows to provide reliability through Dkron Servers, while providing performance gains
+from Dkron Agents. Unfortunately it seemed dkron helm chart is not stable and the agent's template has bugs,
+limiting me to either 0 or 1 agent.
 
 %MEMORY LIMIT NOTES: although no memory heavy jobs are done, memory usage was very high (raft?)
 
 \subsection{Limitations}
-Dkron's helm chart is still not stable for an easy deployment. Documentation is lacking, and
+Deploying Dkron with helm proved to be challenging. Documentation is lacking, and
 it seems there is no stable helm chart for dkron. Additionally, during bug fixing and deployment,
-I was left with the idea that [a lot more other developers face their own
-unexpected issues with dkron's helm chart](https://github.com/distribworks/dkron/issues?q=helm).
+I was left with the idea that \href{https://github.com/distribworks/dkron/issues?q=helm}{a lot more other developers face their own
+unexpected issues with dkron's helm chart}.
 
 \section{Annexes}
 
@@ -567,23 +567,18 @@ Figure \ref{fig:fulloriginalfactors} provides the sign table with the original v
 % \bibliography{mybibliography}
 %
 \begin{thebibliography}{8}
-\bibitem{ref_article1}
-Author, F.: Article title. Journal \textbf{2}(5), 99--110 (2016)
 
-\bibitem{ref_lncs1}
-Author, F., Author, S.: Title of a proceedings paper. In: Editor,
-F., Editor, S. (eds.) CONFERENCE 2016, LNCS, vol. 9999, pp. 1--13.
-Springer, Heidelberg (2016). \doi{10.10007/1234567890}
+\bibitem{mm2024}
+Matos, M.: IST - Large Scale Systems Engineering - Class slides
+Lisbon (2024)
 
-\bibitem{ref_book1}
-Author, F., Author, S., Author, T.: Book title. 2nd edn. Publisher,
-Location (1999)
-
-\bibitem{ref_proc1}
-Author, A.-B.: Contribution title. In: 9th International Proceedings
-on Proceedings, pp. 1--2. Publisher, Location (2010)
-
-\bibitem{ref_url1}
-LNCS Homepage, \url{http://www.springer.com/lncs}, last accessed 2023/10/25
+\bibitem{dkron}
+https://dkron.io/docs/intro
+\bibitem{dkron2}
+https://k6.io/docs/
+\bibitem{dkron3}
+https://helm.sh/docs/
+\bibitem{dkron4}
+https://kubernetes.io/docs/home/
 \end{thebibliography}
 \end{document}
