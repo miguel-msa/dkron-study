@@ -480,13 +480,13 @@ metric: that increasing the amount of Dkron Servers increases response time. Thi
 to the nature of the reliability characteristic supported by Dkron Servers, increasing crosstalk.
 
 At the beginning of the analysis I was curious to understand the behavior of Dkron when
-in high stress. It seems to handle relatively when, i.e., although the nodes become unstable,
+in high stress. It seems to handle relatively well, i.e., although the nodes become unstable,
 Dkron is still able to respond to incoming requests and also execute the existing jobs. Nevertheless,
 nodes crashed a lot due to high memory and cpu usage as I observed in K9 during the benchmark.
 
 Other particularity that I observed is that, at most, 2 Servers were at 100\% cpu utilization, while
 the other peers were relatively stable. It seems the Raft leader has a load a lot higher than its
-peers, making Dkron leaders vulnerable to crashed, requiring frequent new leader elections.
+peers, making Dkron leaders vulnerable to crashes, requiring frequent new leader elections.
 
 In the end, Dkron shows to provide reliability through Dkron Servers, while providing performance gains
 from Dkron Agents. Unfortunately it seemed dkron helm chart is not stable and the agent's template has bugs,
