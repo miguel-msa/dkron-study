@@ -1,5 +1,11 @@
 # Dkron study for Large Scale Engineering course 2024 @IST
 
+This is a Master's degree project that:
+1. Does examination on how Dkron works
+2. Stress tests the system and explores its bottlenecks and possible workaroudn solutions
+
+This was my first project of this kind, and delivered in less than 72 hours.
+
 # Setup
 
 To deploy Dkron into (azure) AKS follow this steps (you need an Azure subscription):
