@@ -4,7 +4,7 @@ This is a Master's degree project that:
 1. Does examination on how Dkron works
 2. Stress tests the system and explores its bottlenecks and possible workaround solutions
 
-This was my first project of this kind, and delivered in less than 72 hours.
+This was my first project of this kind, and delivered in less than 3 days.
 
 # Setup
 
